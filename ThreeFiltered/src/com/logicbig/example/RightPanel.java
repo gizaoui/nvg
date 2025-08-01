@@ -18,12 +18,15 @@ public class RightPanel  extends JPanel {
         info = new JLabel("Selection shows here ...");
         centerPanel.add(info);
 
+        JPanel componentPanel = new JPanel();
+        componentPanel.setLayout(new BorderLayout());
+        componentPanel.add(new JLabel(" Component : "), BorderLayout.WEST);
         JTextField textSouth = new JTextField();
+        textSouth.setMargin(new Insets(2, 5, 2, 0));
+        componentPanel.add(textSouth, BorderLayout.CENTER);
 
         this.add(centerPanel, BorderLayout.CENTER);
-        this.add(textSouth, BorderLayout.SOUTH);
-
-
+        this.add(componentPanel, BorderLayout.SOUTH);
     }
 
     public JLabel getInfo() {

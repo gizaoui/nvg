@@ -6,6 +6,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
+import java.awt.*;
 import java.util.Collections;
 import java.util.function.BiPredicate;
 
@@ -36,7 +37,8 @@ public class TreeFilterDecorator {
     }
 
     private void initFilterField() {
-        filterField = new JTextField(15);
+        filterField = new JTextField();
+        filterField.setMargin(new Insets(2, 5, 2, 0));
         filterField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {

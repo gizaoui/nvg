@@ -5,9 +5,7 @@ import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeNode;
 import java.awt.*;
-import java.util.function.BiPredicate;
 
 public class TreeExampleMain {
     public static void main(String[] args) {
@@ -35,16 +33,22 @@ public class TreeExampleMain {
             }
         });
 
+        JTextArea textAreaEast = new JTextArea(1,30);
+        textAreaEast.setBackground(Color.RED);
+
+        TracePanel southPanel =  new TracePanel();
 
 
-        JSplitPane plitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        JSplitPane plitPaneNorth = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        plitPaneNorth.setPreferredSize(new Dimension(1500, 600));
+
+        JSplitPane plitPane2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, plitPaneNorth, southPanel);
 
 
-        plitPane.add(leftPanel);
-        plitPane.add(rightPanel);
 
 
-        frame.add(plitPane);
+
+        frame.add(plitPane2);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 

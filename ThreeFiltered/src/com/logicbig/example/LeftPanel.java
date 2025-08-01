@@ -17,7 +17,12 @@ public class LeftPanel  extends JPanel {
         TreeFilterDecorator filterDecorator = TreeFilterDecorator.decorate(tree, createUserObjectMatcher());
         tree.setCellRenderer(new TradingProjectTreeRenderer(() -> filterDecorator.getFilterField().getText()));
         this.add(new JScrollPane(tree), BorderLayout.CENTER);
-        this.add(filterDecorator.getFilterField(), BorderLayout.NORTH);
+
+        JPanel filterPanel = new JPanel();
+        filterPanel.setLayout(new BorderLayout());
+        filterPanel.add(new JLabel(" Search EV : "), BorderLayout.WEST);
+        filterPanel.add(filterDecorator.getFilterField(), BorderLayout.CENTER);
+        this.add(filterPanel, BorderLayout.NORTH);
     }
 
     private static BiPredicate<Object, String> createUserObjectMatcher() {
