@@ -39,7 +39,7 @@ public class LeftPanelThree {
 		// create the tree by passing in the root node
 		tree = new JTree(root);
 		scrollTree = new JScrollPane(tree);
-		scrollTree.setPreferredSize(new Dimension(150, 700));
+
 	}
 
 	public JPanel getView() {

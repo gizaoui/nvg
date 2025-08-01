@@ -15,7 +15,8 @@ public class MainPanel extends JFrame {
 	public MainPanel() throws HeadlessException {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setTitle("JTree Selection example");
-		this.setSize(700, 1000);
+		// this.setSize(1500, 1000);
+		// this.setLocationRelativeTo(null);
 		this.setLayout(new BorderLayout());
 		this.add(this.getSplitPane(), BorderLayout.CENTER);
 	}
@@ -26,10 +27,11 @@ public class MainPanel extends JFrame {
 		JTree tree = new JTree(projectHierarchyTreeNode);
 		JTreeUtil.setTreeExpandedState(tree, true);
 
-		JScrollPane scrollTree = new JScrollPane(tree);
-		scrollTree.setPreferredSize(new Dimension(150, 700));
+		JScrollPane leftPanel = new JScrollPane(tree);
+		// leftPanel.setPreferredSize(new Dimension(400, 700));
 
 		RightPanelThree rightPanel = getRightPanelContainer();
+		// rightPanel.setPreferredSize(new Dimension(700, 700));
 
 		tree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
 			@Override
@@ -40,8 +42,8 @@ public class MainPanel extends JFrame {
 		});
 
 		JSplitPane plitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-		// plitPane.setDividerLocation(0.5);
-		plitPane.add(scrollTree);
+		//plitPane.setDividerLocation(0.5);
+		plitPane.add(leftPanel);
 		plitPane.add(rightPanel);
 
 		return plitPane;

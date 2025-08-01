@@ -18,9 +18,12 @@ public class TradingProjectTreeRenderer extends DefaultTreeCellRenderer {
     @Override
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
                                                   boolean leaf, int row, boolean hasFocus) {
+
         super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
         Object userObject = node.getUserObject();
+        /*
         if (userObject instanceof ProjectParticipant) {
             ProjectParticipant pp = (ProjectParticipant) userObject;
             String text = String.format(SPAN_FORMAT, "rg b(0, 0, 150)",
@@ -38,6 +41,11 @@ public class TradingProjectTreeRenderer extends DefaultTreeCellRenderer {
                     renderFilterMatch(node, userObject.toString()));
             this.setText("<html>" + text + "</html>");
         }
+*/
+        String text = String.format(SPAN_FORMAT, "rgb(120,0,0)",
+                renderFilterMatch(node, userObject.toString()));
+        this.setText("<html>" + text + "</html>");
+
         return this;
     }
 

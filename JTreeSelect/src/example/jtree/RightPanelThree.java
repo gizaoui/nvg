@@ -1,9 +1,8 @@
 package example.jtree;
 
-import java.awt.Dimension;
+import java.awt.*;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 public class RightPanelThree extends JPanel {
 
@@ -13,9 +12,18 @@ public class RightPanelThree extends JPanel {
 
 	public RightPanelThree()  {
 		super();
-		this.setPreferredSize(new Dimension(500, 700));
+		this.setLayout(new BorderLayout());
+		JPanel centerPanel = new JPanel();
+		centerPanel.setBackground(Color.WHITE);
 		info = new JLabel("Selection shows here ...");
-		this.add(info);
+		centerPanel.add(info);
+
+		JTextField textSouth = new JTextField();
+
+		this.add(centerPanel, BorderLayout.CENTER);
+		this.add(textSouth, BorderLayout.SOUTH);
+
+
 	}
 
 	public JLabel getInfo() {
