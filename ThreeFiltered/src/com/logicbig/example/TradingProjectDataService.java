@@ -1,5 +1,7 @@
 package com.logicbig.example;
 
+import com.logicbig.example.entity.Project;
+import com.logicbig.example.entity.ProjectParticipant;
 import com.logicbig.util.RandomUtil;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -32,8 +34,7 @@ public enum TradingProjectDataService {
 
     private MutableTreeNode getProjectNode(String project) {
         DefaultMutableTreeNode projectNode = new DefaultMutableTreeNode(new Project(project));
-        String ROLES[] =
-                {"Project Manager", "Tech Lead", "Developer", "Scrum Master", "Business Analyst"};
+        String ROLES[] = {"Project Manager", "Tech Lead", "Developer", "Scrum Master", "Business Analyst"};
         for (int i = 0; i < ROLES.length; i++) {
             projectNode.add(getEmployeeNodeForRole(ROLES[i]));
         }
@@ -42,8 +43,7 @@ public enum TradingProjectDataService {
 
     private MutableTreeNode getEmployeeNodeForRole(String role) {
         ProjectParticipant projectParticipant = new ProjectParticipant(RandomUtil.getFullName(), role);
-        DefaultMutableTreeNode employeeNode = new DefaultMutableTreeNode(projectParticipant);
-        return employeeNode;
+        return new DefaultMutableTreeNode(projectParticipant);
     }
 
     public TreeNode getProjectHierarchy() {

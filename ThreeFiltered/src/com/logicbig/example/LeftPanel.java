@@ -1,5 +1,8 @@
 package com.logicbig.example;
 
+import com.logicbig.example.entity.Project;
+import com.logicbig.example.entity.ProjectParticipant;
+
 import javax.swing.*;
 import javax.swing.tree.TreeNode;
 import java.awt.*;

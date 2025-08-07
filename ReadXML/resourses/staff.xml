@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<company id="1">
+    <staff id="1.1">
+        <name>mkyong</name>
+        <role>support</role>
+        <salary currency="USD">5000</salary>
+    </staff>
+    <staff id="1.2">
+        <name>yflow</name>
+        <role>admin</role>
+        <salary currency="EUR">8000</salary>
+    </staff>
+</company>

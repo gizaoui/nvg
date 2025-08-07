@@ -1,5 +1,8 @@
 package com.logicbig.example;
 
+import com.logicbig.example.entity.Project;
+import com.logicbig.example.entity.ProjectParticipant;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -23,28 +26,23 @@ public class TradingProjectTreeRenderer extends DefaultTreeCellRenderer {
 
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
         Object userObject = node.getUserObject();
-        /*
+
+
         if (userObject instanceof ProjectParticipant) {
             ProjectParticipant pp = (ProjectParticipant) userObject;
-            String text = String.format(SPAN_FORMAT, "rg b(0, 0, 150)",
-                    renderFilterMatch(node, pp.getName()));
-            text += " [" + String.format(SPAN_FORMAT, "rgb(90, 70, 0)",
-                    renderFilterMatch(node, pp.getRole())) + "]";
+            String text = String.format(SPAN_FORMAT, "rg b(0, 0, 150)", renderFilterMatch(node, pp.getName()));
+            text += " [" + String.format(SPAN_FORMAT, "rgb(90, 70, 0)", renderFilterMatch(node, pp.getRole())) + "]";
             this.setText("<html>" + text + "</html>");
+
         } else if (userObject instanceof Project) {
             Project project = (Project) userObject;
-            String text = String.format(SPAN_FORMAT, "rgb(0,70,0)",
-                    renderFilterMatch(node, project.getName()));
+            String text = String.format(SPAN_FORMAT, "rgb(0,70,0)", renderFilterMatch(node, project.getName()));
             this.setText("<html>" + text + "</html>");
+
         } else {
-            String text = String.format(SPAN_FORMAT, "rgb(120,0,0)",
-                    renderFilterMatch(node, userObject.toString()));
+            String text = String.format(SPAN_FORMAT, "rgb(120,0,0)", renderFilterMatch(node, userObject.toString()));
             this.setText("<html>" + text + "</html>");
         }
-*/
-        String text = String.format(SPAN_FORMAT, "rgb(120,0,0)",
-                renderFilterMatch(node, userObject.toString()));
-        this.setText("<html>" + text + "</html>");
 
         return this;
     }

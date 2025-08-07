@@ -1,4 +1,4 @@
-package com.logicbig.example;
+package com.logicbig.example.entity;
 
 public class Project {
 
