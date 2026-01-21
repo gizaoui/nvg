@@ -27,7 +27,8 @@ $ git pull --rebase --autostash
 
 ```java
 import java.lang.reflect.Method;
-
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.swing.JTextField;
 
 public class Main {
@@ -40,21 +41,19 @@ public class Main {
 			if ((methods[i].getName().contains("get") || methods[i].getName().contains("is"))
 					&& methods[i].getReturnType().getSimpleName().contains("String"))
 				System.out.println("   -" + methods[i].getReturnType().getSimpleName() + " " + methods[i].getName()
-						+ " " + " (" + methods[i].getParameterCount() + " param.)");
+						+ " " + " (" + methods[i].getParameterCount() + " param. "
+						+ Stream.of(methods[i].getParameterTypes()).collect(Collectors.toList()) + ")");
 		}
 
 		Class<?> c = a.getSuperclass();
 		if (c != null) {
-
 			getAllClass(c);
 		}
 	}
 
 	public static void main(String[] args) {
 		JTextField a = new JTextField();
-
 		getAllClass(a.getClass());
 	}
 }
-
 ```
