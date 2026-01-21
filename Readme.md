@@ -23,3 +23,38 @@ erreur : veuillez les valider ou les remiser.
 $ git pull --rebase --autostash
 ```
 
+## Récupération des méthodes des sous-classes
+
+```java
+import java.lang.reflect.Method;
+
+import javax.swing.JTextField;
+
+public class Main {
+
+	private static void getAllClass(Class<?> a) {
+
+		System.out.println("\n- " + a.getSimpleName());
+		Method[] methods = a.getDeclaredMethods();
+		for (int i = 0; i < methods.length; i++) {
+			if ((methods[i].getName().contains("get") || methods[i].getName().contains("is"))
+					&& methods[i].getReturnType().getSimpleName().contains("String"))
+				System.out.println("   -" + methods[i].getReturnType().getSimpleName() + " " + methods[i].getName()
+						+ " " + " (" + methods[i].getParameterCount() + " param.)");
+		}
+
+		Class<?> c = a.getSuperclass();
+		if (c != null) {
+
+			getAllClass(c);
+		}
+	}
+
+	public static void main(String[] args) {
+		JTextField a = new JTextField();
+
+		getAllClass(a.getClass());
+	}
+}
+
+```
