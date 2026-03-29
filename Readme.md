@@ -57,3 +57,5 @@ public class Main {
 	}
 }
 ```
+- https://www.baeldung.com/java-custom-annotation
+- https://www.baeldung.com/java-default-annotations
