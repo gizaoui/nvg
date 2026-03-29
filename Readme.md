@@ -57,5 +57,30 @@ public class Main {
 	}
 }
 ```
+
 - https://www.baeldung.com/java-custom-annotation
-- https://www.baeldung.com/java-default-annotations
+
+
+## https://www.baeldung.com/java-default-annotations
+
+```java
+// 1. Définition de l'interface fonctionnelle
+@FunctionalInterface
+interface Adder {
+    int add(int a, int b); // La signature doit correspondre à la lambda
+}
+
+public class Main {
+    public static void main(String[] args) {
+        
+        // 2. Utilisation de la lambda pour implémenter l'interface
+        Adder adder = (a, b) -> a + b;
+
+        // 3. Appel de la méthode et stockage du résultat
+        int result = adder.add(4, 5);
+
+        // 4. Affichage du résultat
+        System.out.println("Le résultat de l'ajout est : " + result);
+    }
+}
+```
