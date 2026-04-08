@@ -96,3 +96,12 @@ print("Method 1 : %s"%(String(msg)))
 # PYTHON
 print("Method 2 : %s"%("".join(map(chr, msg))))
 ```
+
+
+```py
+# -*- coding: iso-8859-15 -*-
+start=b"START"
+print(start)
+print(start.decode(encoding="iso-8859-15"))
+print("Method 2 : %s"%("".join(map(chr, start))))
+```
