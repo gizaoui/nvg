@@ -84,3 +84,15 @@ public class Main {
     }
 }
 ```
+
+
+```py
+# JYTHON
+from java.lang import String
+msg = String("Hello Java").getBytes()
+print(msg)
+print("Method 1 : %s"%(String(msg)))
+
+# PYTHON
+print("Method 2 : %s"%("".join(map(chr, msg))))
+```
