@@ -11,8 +11,11 @@ import java.io.IOException;
  * Démo : glisser-déposer d'objets métier entre deux JList.
  * Chaque élément des listes est un objet Item, associé à une chaîne
  * affichée dans la liste (via toString()).
- * - Glisser depuis une liste vers l'autre déplace l'objet.
- * - Glisser à l'intérieur de la même liste réordonne les objets.
+ *
+ * - Glisser à l'intérieur de la même liste => PERMUTATION : l'élément
+ *   déposé et l'élément cible échangent leur position (swap).
+ * - Glisser d'une liste vers l'autre => déplacement classique (insertion
+ *   à l'index cible + suppression dans la liste source).
  */
 public class DualListDnD extends JFrame {
 
@@ -45,7 +48,7 @@ public class DualListDnD extends JFrame {
     }
 
     public DualListDnD() {
-        super("Drag & Drop d'objets entre deux JList");
+        super("Drag & Drop d'objets entre deux JList (avec permutation)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(500, 300);
         setLayout(new GridLayout(1, 2, 10, 10));
@@ -69,7 +72,9 @@ public class DualListDnD extends JFrame {
     private JList<Item> createList(DefaultListModel<Item> model) {
         JList<Item> list = new JList<>(model);
         list.setDragEnabled(true);
-        list.setDropMode(DropMode.INSERT);
+        // ON_OR_INSERT permet de détecter si on dépose PILE sur un élément
+        // (=> permutation) ou entre deux éléments (=> insertion classique).
+        list.setDropMode(DropMode.ON_OR_INSERT);
         list.setTransferHandler(new ItemTransferHandler());
         return list;
     }
@@ -117,14 +122,19 @@ public class DualListDnD extends JFrame {
 
     /**
      * TransferHandler générique réutilisable par n'importe quelle JList<Item>.
-     * Gère l'export (drag depuis une liste) et l'import (drop dans une liste),
-     * y compris le déplacement d'une liste vers une autre.
+     *
+     * - Drop dans la MÊME liste : permutation (échange des deux éléments).
+     * - Drop dans une AUTRE liste : déplacement classique (insertion + retrait).
      */
     private static class ItemTransferHandler extends TransferHandler {
 
-        // Mémorise la source du drag en cours (liste + index) pour pouvoir la retirer après le drop
+        // Mémorise la source du drag en cours (liste + index)
         private JList<Item> sourceList;
         private int sourceIndex = -1;
+
+        // Indique si le dernier import a déjà été géré par une permutation
+        // (dans ce cas, exportDone ne doit rien retirer de plus)
+        private boolean handledAsSwap = false;
 
         @Override
         public int getSourceActions(JComponent c) {
@@ -137,6 +147,7 @@ public class DualListDnD extends JFrame {
             JList<Item> list = (JList<Item>) c;
             sourceList = list;
             sourceIndex = list.getSelectedIndex();
+            handledAsSwap = false;
             Item value = list.getSelectedValue();
             return new ItemTransferable(value);
         }
@@ -153,9 +164,9 @@ public class DualListDnD extends JFrame {
         public boolean importData(TransferSupport support) {
             if (!canImport(support)) return false;
 
-            Item value;
+            Item draggedValue;
             try {
-                value = (Item) support.getTransferable()
+                draggedValue = (Item) support.getTransferable()
                         .getTransferData(ItemTransferable.ITEM_FLAVOR);
             } catch (UnsupportedFlavorException | IOException e) {
                 return false;
@@ -169,20 +180,37 @@ public class DualListDnD extends JFrame {
 
             JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
             int dropIndex = dl.getIndex();
-            if (dropIndex < 0) dropIndex = targetModel.getSize();
+            if (dropIndex < 0) dropIndex = targetModel.getSize() - 1;
+            if (dropIndex >= targetModel.getSize()) dropIndex = targetModel.getSize() - 1;
 
-            // Ajustement si on déplace un élément vers le bas dans la même liste
-            if (targetList == sourceList && sourceIndex >= 0 && sourceIndex < dropIndex) {
-                dropIndex--;
+            // --- Cas 1 : même liste => PERMUTATION ---
+            if (targetList == sourceList) {
+                if (dropIndex == sourceIndex) {
+                    handledAsSwap = false;
+                    return false; // rien à faire
+                }
+                Item other = targetModel.getElementAt(dropIndex);
+                targetModel.set(dropIndex, draggedValue);
+                targetModel.set(sourceIndex, other);
+                handledAsSwap = true;
+                return true;
             }
 
-            targetModel.add(dropIndex, value);
+            // --- Cas 2 : liste différente => déplacement classique ---
+            handledAsSwap = false;
+            int insertIndex = dl.getIndex();
+            if (insertIndex < 0 || !dl.isInsert()) {
+                insertIndex = targetModel.getSize();
+            }
+            targetModel.add(insertIndex, draggedValue);
             return true;
         }
 
         @Override
         protected void exportDone(JComponent source, Transferable data, int action) {
-            if (action == TransferHandler.MOVE && sourceList != null && sourceIndex >= 0) {
+            // La permutation a déjà tout géré : on ne retire rien de plus.
+            if (!handledAsSwap && action == TransferHandler.MOVE
+                    && sourceList != null && sourceIndex >= 0) {
                 @SuppressWarnings("unchecked")
                 DefaultListModel<Item> model =
                         (DefaultListModel<Item>) sourceList.getModel();
@@ -192,6 +220,7 @@ public class DualListDnD extends JFrame {
             }
             sourceList = null;
             sourceIndex = -1;
+            handledAsSwap = false;
         }
     }
 
