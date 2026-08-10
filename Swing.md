@@ -1,4 +1,4 @@
-# Swing
+
 
 import javax.swing.*;
 import java.awt.*;
@@ -136,10 +136,4 @@ public class DualListDnD extends JFrame {
     }
 }
 
-
-
-
-
-
-
-                
+        
