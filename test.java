@@ -67,21 +67,29 @@ public class DualListDnD extends JFrame {
         rightModel.addElement(new Item(5, "Carotte"));
         rightModel.addElement(new Item(6, "Poireau"));
 
-        JList<Item> leftList = createList(leftModel);
-        JList<Item> rightList = createList(rightModel);
+        // IMPORTANT : une seule instance de TransferHandler, partagée par les
+        // deux listes. C'est elle qui mémorise, le temps du drag, la liste
+        // source et les indices sélectionnés. Si chaque liste avait sa
+        // propre instance, importData() (appelé côté liste CIBLE) ne
+        // verrait jamais les indices enregistrés côté liste SOURCE, et le
+        // déplacement entre les deux listes échouerait systématiquement.
+        ItemTransferHandler sharedHandler = new ItemTransferHandler();
+
+        JList<Item> leftList = createList(leftModel, sharedHandler);
+        JList<Item> rightList = createList(rightModel, sharedHandler);
 
         add(wrapInScrollPane(leftList, "Fruits"));
         add(wrapInScrollPane(rightList, "Légumes"));
     }
 
-    private JList<Item> createList(DefaultListModel<Item> model) {
+    private JList<Item> createList(DefaultListModel<Item> model, ItemTransferHandler handler) {
         JList<Item> list = new JList<>(model);
         // Autorise la sélection de plusieurs éléments non contigus (Ctrl+clic)
         // ou d'une plage (Maj+clic).
         list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         list.setDragEnabled(true);
         list.setDropMode(DropMode.ON_OR_INSERT);
-        list.setTransferHandler(new ItemTransferHandler());
+        list.setTransferHandler(handler);
         return list;
     }
 
