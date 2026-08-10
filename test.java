@@ -196,12 +196,18 @@ public class DualListDnD extends JFrame {
                 return true;
             }
 
-            // --- Cas 2 : liste différente => déplacement classique ---
+            // --- Cas 2 : liste différente => déplacement au-dessus de l'élément ciblé ---
             handledAsSwap = false;
             int insertIndex = dl.getIndex();
-            if (insertIndex < 0 || !dl.isInsert()) {
+            if (insertIndex < 0) {
+                // Déposé hors de tout élément (zone vide) => on ajoute à la fin
                 insertIndex = targetModel.getSize();
             }
+            // On insère systématiquement AVANT l'élément ciblé, qu'on soit
+            // en mode "sur l'élément" (ON) ou "entre deux éléments" (INSERT),
+            // pour obtenir un comportement proche d'une permutation :
+            // l'enregistrement déplacé se positionne juste au-dessus du
+            // repère survolé dans l'autre liste.
             targetModel.add(insertIndex, draggedValue);
             return true;
         }
