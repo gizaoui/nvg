@@ -1,21 +1,25 @@
-
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Démo : glisser-déposer d'objets métier entre deux JList.
+ * Démo : glisser-déposer d'objets métier entre deux JList, avec support
+ * de la sélection multiple.
+ *
  * Chaque élément des listes est un objet Item, associé à une chaîne
  * affichée dans la liste (via toString()).
  *
- * - Glisser à l'intérieur de la même liste => PERMUTATION : l'élément
- *   déposé et l'élément cible échangent leur position (swap).
- * - Glisser d'une liste vers l'autre => déplacement classique (insertion
- *   à l'index cible + suppression dans la liste source).
+ * - On peut sélectionner plusieurs éléments (Ctrl+clic / Maj+clic) puis
+ *   les glisser en bloc.
+ * - Glisser dans la MÊME liste : le bloc sélectionné est retiré puis
+ *   réinséré juste au-dessus de l'élément survolé (réordonnancement).
+ * - Glisser dans l'AUTRE liste : le bloc sélectionné est inséré juste
+ *   au-dessus de l'élément survolé, puis retiré de la liste source.
  */
 public class DualListDnD extends JFrame {
 
@@ -48,7 +52,7 @@ public class DualListDnD extends JFrame {
     }
 
     public DualListDnD() {
-        super("Drag & Drop d'objets entre deux JList (avec permutation)");
+        super("Drag & Drop multi-sélection entre deux JList");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(500, 300);
         setLayout(new GridLayout(1, 2, 10, 10));
@@ -57,10 +61,11 @@ public class DualListDnD extends JFrame {
         leftModel.addElement(new Item(1, "Pomme"));
         leftModel.addElement(new Item(2, "Banane"));
         leftModel.addElement(new Item(3, "Cerise"));
+        leftModel.addElement(new Item(4, "Datte"));
 
         DefaultListModel<Item> rightModel = new DefaultListModel<>();
-        rightModel.addElement(new Item(4, "Carotte"));
-        rightModel.addElement(new Item(5, "Poireau"));
+        rightModel.addElement(new Item(5, "Carotte"));
+        rightModel.addElement(new Item(6, "Poireau"));
 
         JList<Item> leftList = createList(leftModel);
         JList<Item> rightList = createList(rightModel);
@@ -71,9 +76,10 @@ public class DualListDnD extends JFrame {
 
     private JList<Item> createList(DefaultListModel<Item> model) {
         JList<Item> list = new JList<>(model);
+        // Autorise la sélection de plusieurs éléments non contigus (Ctrl+clic)
+        // ou d'une plage (Maj+clic).
+        list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         list.setDragEnabled(true);
-        // ON_OR_INSERT permet de détecter si on dépose PILE sur un élément
-        // (=> permutation) ou entre deux éléments (=> insertion classique).
         list.setDropMode(DropMode.ON_OR_INSERT);
         list.setTransferHandler(new ItemTransferHandler());
         return list;
@@ -87,28 +93,28 @@ public class DualListDnD extends JFrame {
     }
 
     /**
-     * Transferable local transportant directement une instance d'Item
+     * Transferable local transportant une liste d'objets Item
      * (pas de sérialisation nécessaire, transfert intra-JVM).
      */
     private static class ItemTransferable implements Transferable {
 
-        static final DataFlavor ITEM_FLAVOR =
-                new DataFlavor(Item.class, "Item Object");
+        static final DataFlavor ITEM_LIST_FLAVOR =
+                new DataFlavor(List.class, "List of Item Objects");
 
-        private final Item item;
+        private final List<Item> items;
 
-        ItemTransferable(Item item) {
-            this.item = item;
+        ItemTransferable(List<Item> items) {
+            this.items = items;
         }
 
         @Override
         public DataFlavor[] getTransferDataFlavors() {
-            return new DataFlavor[] { ITEM_FLAVOR };
+            return new DataFlavor[] { ITEM_LIST_FLAVOR };
         }
 
         @Override
         public boolean isDataFlavorSupported(DataFlavor flavor) {
-            return ITEM_FLAVOR.equals(flavor);
+            return ITEM_LIST_FLAVOR.equals(flavor);
         }
 
         @Override
@@ -116,25 +122,26 @@ public class DualListDnD extends JFrame {
             if (!isDataFlavorSupported(flavor)) {
                 throw new UnsupportedFlavorException(flavor);
             }
-            return item;
+            return items;
         }
     }
 
     /**
      * TransferHandler générique réutilisable par n'importe quelle JList<Item>.
-     *
-     * - Drop dans la MÊME liste : permutation (échange des deux éléments).
-     * - Drop dans une AUTRE liste : déplacement classique (insertion + retrait).
+     * Gère le déplacement d'un ou plusieurs éléments sélectionnés :
+     * - dans la même liste (réordonnancement en bloc),
+     * - vers une autre liste (déplacement en bloc).
      */
     private static class ItemTransferHandler extends TransferHandler {
 
-        // Mémorise la source du drag en cours (liste + index)
+        // Mémorise la source du drag en cours : liste + indices sélectionnés
+        // (triés par ordre croissant, comme le retourne getSelectedIndices()).
         private JList<Item> sourceList;
-        private int sourceIndex = -1;
+        private int[] sourceIndices;
 
-        // Indique si le dernier import a déjà été géré par une permutation
-        // (dans ce cas, exportDone ne doit rien retirer de plus)
-        private boolean handledAsSwap = false;
+        // Indique si l'import a déjà retiré les éléments de la liste source
+        // (cas "même liste") pour éviter un double retrait dans exportDone.
+        private boolean alreadyRemovedFromSource;
 
         @Override
         public int getSourceActions(JComponent c) {
@@ -146,16 +153,16 @@ public class DualListDnD extends JFrame {
             @SuppressWarnings("unchecked")
             JList<Item> list = (JList<Item>) c;
             sourceList = list;
-            sourceIndex = list.getSelectedIndex();
-            handledAsSwap = false;
-            Item value = list.getSelectedValue();
-            return new ItemTransferable(value);
+            sourceIndices = list.getSelectedIndices();
+            alreadyRemovedFromSource = false;
+            List<Item> values = new ArrayList<>(list.getSelectedValuesList());
+            return new ItemTransferable(values);
         }
 
         @Override
         public boolean canImport(TransferSupport support) {
             if (!support.isDrop()) return false;
-            if (!support.isDataFlavorSupported(ItemTransferable.ITEM_FLAVOR)) return false;
+            if (!support.isDataFlavorSupported(ItemTransferable.ITEM_LIST_FLAVOR)) return false;
             support.setShowDropLocation(true);
             return true;
         }
@@ -163,11 +170,14 @@ public class DualListDnD extends JFrame {
         @Override
         public boolean importData(TransferSupport support) {
             if (!canImport(support)) return false;
+            if (sourceIndices == null || sourceIndices.length == 0) return false;
 
-            Item draggedValue;
+            List<Item> draggedValues;
             try {
-                draggedValue = (Item) support.getTransferable()
-                        .getTransferData(ItemTransferable.ITEM_FLAVOR);
+                @SuppressWarnings("unchecked")
+                List<Item> transferred = (List<Item>) support.getTransferable()
+                        .getTransferData(ItemTransferable.ITEM_LIST_FLAVOR);
+                draggedValues = transferred;
             } catch (UnsupportedFlavorException | IOException e) {
                 return false;
             }
@@ -180,53 +190,70 @@ public class DualListDnD extends JFrame {
 
             JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
             int dropIndex = dl.getIndex();
-            if (dropIndex < 0) dropIndex = targetModel.getSize() - 1;
-            if (dropIndex >= targetModel.getSize()) dropIndex = targetModel.getSize() - 1;
+            if (dropIndex < 0) dropIndex = targetModel.getSize();
 
-            // --- Cas 1 : même liste => PERMUTATION ---
             if (targetList == sourceList) {
-                if (dropIndex == sourceIndex) {
-                    handledAsSwap = false;
-                    return false; // rien à faire
+                // --- Réordonnancement dans la même liste ---
+
+                // On ignore un dépôt qui tomberait exactement sur le bloc
+                // sélectionné lui-même (rien à faire dans ce cas).
+                for (int idx : sourceIndices) {
+                    if (idx == dropIndex) {
+                        return false;
+                    }
                 }
-                Item other = targetModel.getElementAt(dropIndex);
-                targetModel.set(dropIndex, draggedValue);
-                targetModel.set(sourceIndex, other);
-                handledAsSwap = true;
+
+                // Combien d'éléments retirés se trouvaient AVANT le point de
+                // dépôt : leur suppression va décaler l'index cible d'autant.
+                int countBefore = 0;
+                for (int idx : sourceIndices) {
+                    if (idx < dropIndex) countBefore++;
+                }
+
+                // Retrait des éléments sélectionnés, du plus grand index au
+                // plus petit, pour ne pas invalider les indices restants.
+                for (int i = sourceIndices.length - 1; i >= 0; i--) {
+                    targetModel.remove(sourceIndices[i]);
+                }
+
+                int insertAt = dropIndex - countBefore;
+                insertAt = Math.max(0, Math.min(insertAt, targetModel.getSize()));
+
+                for (Item item : draggedValues) {
+                    targetModel.add(insertAt++, item);
+                }
+
+                alreadyRemovedFromSource = true;
                 return true;
             }
 
-            // --- Cas 2 : liste différente => déplacement au-dessus de l'élément ciblé ---
-            handledAsSwap = false;
-            int insertIndex = dl.getIndex();
-            if (insertIndex < 0) {
-                // Déposé hors de tout élément (zone vide) => on ajoute à la fin
-                insertIndex = targetModel.getSize();
+            // --- Déplacement vers l'autre liste ---
+            int insertAt = dropIndex;
+            for (Item item : draggedValues) {
+                targetModel.add(insertAt++, item);
             }
-            // On insère systématiquement AVANT l'élément ciblé, qu'on soit
-            // en mode "sur l'élément" (ON) ou "entre deux éléments" (INSERT),
-            // pour obtenir un comportement proche d'une permutation :
-            // l'enregistrement déplacé se positionne juste au-dessus du
-            // repère survolé dans l'autre liste.
-            targetModel.add(insertIndex, draggedValue);
+            alreadyRemovedFromSource = false;
             return true;
         }
 
         @Override
         protected void exportDone(JComponent source, Transferable data, int action) {
-            // La permutation a déjà tout géré : on ne retire rien de plus.
-            if (!handledAsSwap && action == TransferHandler.MOVE
-                    && sourceList != null && sourceIndex >= 0) {
+            if (action == TransferHandler.MOVE && !alreadyRemovedFromSource
+                    && sourceList != null && sourceIndices != null) {
                 @SuppressWarnings("unchecked")
                 DefaultListModel<Item> model =
                         (DefaultListModel<Item>) sourceList.getModel();
-                if (sourceIndex < model.getSize()) {
-                    model.remove(sourceIndex);
+                // Retrait du plus grand index au plus petit pour rester valide.
+                for (int i = sourceIndices.length - 1; i >= 0; i--) {
+                    int idx = sourceIndices[i];
+                    if (idx < model.getSize()) {
+                        model.remove(idx);
+                    }
                 }
             }
             sourceList = null;
-            sourceIndex = -1;
-            handledAsSwap = false;
+            sourceIndices = null;
+            alreadyRemovedFromSource = false;
         }
     }
 
