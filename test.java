@@ -8,43 +8,73 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 
 /**
- * Démo : glisser-déposer d'éléments entre deux JList.
- * - Glisser depuis une liste vers l'autre déplace l'élément.
- * - Glisser à l'intérieur de la même liste réordonne les éléments.
+ * Démo : glisser-déposer d'objets métier entre deux JList.
+ * Chaque élément des listes est un objet Item, associé à une chaîne
+ * affichée dans la liste (via toString()).
+ * - Glisser depuis une liste vers l'autre déplace l'objet.
+ * - Glisser à l'intérieur de la même liste réordonne les objets.
  */
 public class DualListDnD extends JFrame {
 
+    /**
+     * Objet métier générique : contient une donnée (id, valeur, etc.)
+     * et une chaîne d'affichage utilisée par le rendu de la JList.
+     */
+    public static class Item {
+        private final int id;
+        private final String label;
+
+        public Item(int id, String label) {
+            this.id = id;
+            this.label = label;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        // Utilisé par défaut par JList pour afficher l'élément
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
     public DualListDnD() {
-        super("Drag & Drop entre deux JList");
+        super("Drag & Drop d'objets entre deux JList");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(500, 300);
         setLayout(new GridLayout(1, 2, 10, 10));
 
-        DefaultListModel<String> leftModel = new DefaultListModel<>();
-        leftModel.addElement("Pomme");
-        leftModel.addElement("Banane");
-        leftModel.addElement("Cerise");
+        DefaultListModel<Item> leftModel = new DefaultListModel<>();
+        leftModel.addElement(new Item(1, "Pomme"));
+        leftModel.addElement(new Item(2, "Banane"));
+        leftModel.addElement(new Item(3, "Cerise"));
 
-        DefaultListModel<String> rightModel = new DefaultListModel<>();
-        rightModel.addElement("Carotte");
-        rightModel.addElement("Poireau");
+        DefaultListModel<Item> rightModel = new DefaultListModel<>();
+        rightModel.addElement(new Item(4, "Carotte"));
+        rightModel.addElement(new Item(5, "Poireau"));
 
-        JList<String> leftList = createList(leftModel);
-        JList<String> rightList = createList(rightModel);
+        JList<Item> leftList = createList(leftModel);
+        JList<Item> rightList = createList(rightModel);
 
         add(wrapInScrollPane(leftList, "Fruits"));
         add(wrapInScrollPane(rightList, "Légumes"));
     }
 
-    private JList<String> createList(DefaultListModel<String> model) {
-        JList<String> list = new JList<>(model);
+    private JList<Item> createList(DefaultListModel<Item> model) {
+        JList<Item> list = new JList<>(model);
         list.setDragEnabled(true);
         list.setDropMode(DropMode.INSERT);
-        list.setTransferHandler(new ListItemTransferHandler());
+        list.setTransferHandler(new ItemTransferHandler());
         return list;
     }
 
-    private JPanel wrapInScrollPane(JList<String> list, String title) {
+    private JPanel wrapInScrollPane(JList<Item> list, String title) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JLabel(title, SwingConstants.CENTER), BorderLayout.NORTH);
         panel.add(new JScrollPane(list), BorderLayout.CENTER);
@@ -52,16 +82,48 @@ public class DualListDnD extends JFrame {
     }
 
     /**
-     * TransferHandler générique réutilisable par n'importe quelle JList<String>.
-     * Il gère à la fois l'export (drag depuis une liste) et l'import (drop dans une liste),
+     * Transferable local transportant directement une instance d'Item
+     * (pas de sérialisation nécessaire, transfert intra-JVM).
+     */
+    private static class ItemTransferable implements Transferable {
+
+        static final DataFlavor ITEM_FLAVOR =
+                new DataFlavor(Item.class, "Item Object");
+
+        private final Item item;
+
+        ItemTransferable(Item item) {
+            this.item = item;
+        }
+
+        @Override
+        public DataFlavor[] getTransferDataFlavors() {
+            return new DataFlavor[] { ITEM_FLAVOR };
+        }
+
+        @Override
+        public boolean isDataFlavorSupported(DataFlavor flavor) {
+            return ITEM_FLAVOR.equals(flavor);
+        }
+
+        @Override
+        public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+            if (!isDataFlavorSupported(flavor)) {
+                throw new UnsupportedFlavorException(flavor);
+            }
+            return item;
+        }
+    }
+
+    /**
+     * TransferHandler générique réutilisable par n'importe quelle JList<Item>.
+     * Gère l'export (drag depuis une liste) et l'import (drop dans une liste),
      * y compris le déplacement d'une liste vers une autre.
      */
-    private static class ListItemTransferHandler extends TransferHandler {
-
-        private static final DataFlavor LOCAL_STRING_FLAVOR = DataFlavor.stringFlavor;
+    private static class ItemTransferHandler extends TransferHandler {
 
         // Mémorise la source du drag en cours (liste + index) pour pouvoir la retirer après le drop
-        private JList<String> sourceList;
+        private JList<Item> sourceList;
         private int sourceIndex = -1;
 
         @Override
@@ -72,17 +134,17 @@ public class DualListDnD extends JFrame {
         @Override
         protected Transferable createTransferable(JComponent c) {
             @SuppressWarnings("unchecked")
-            JList<String> list = (JList<String>) c;
+            JList<Item> list = (JList<Item>) c;
             sourceList = list;
             sourceIndex = list.getSelectedIndex();
-            String value = list.getSelectedValue();
-            return new java.awt.datatransfer.StringSelection(value);
+            Item value = list.getSelectedValue();
+            return new ItemTransferable(value);
         }
 
         @Override
         public boolean canImport(TransferSupport support) {
             if (!support.isDrop()) return false;
-            if (!support.isDataFlavorSupported(LOCAL_STRING_FLAVOR)) return false;
+            if (!support.isDataFlavorSupported(ItemTransferable.ITEM_FLAVOR)) return false;
             support.setShowDropLocation(true);
             return true;
         }
@@ -91,17 +153,19 @@ public class DualListDnD extends JFrame {
         public boolean importData(TransferSupport support) {
             if (!canImport(support)) return false;
 
-            String value;
+            Item value;
             try {
-                value = (String) support.getTransferable().getTransferData(LOCAL_STRING_FLAVOR);
+                value = (Item) support.getTransferable()
+                        .getTransferData(ItemTransferable.ITEM_FLAVOR);
             } catch (UnsupportedFlavorException | IOException e) {
                 return false;
             }
 
             @SuppressWarnings("unchecked")
-            JList<String> targetList = (JList<String>) support.getComponent();
-            DefaultListModel<String> targetModel =
-                    (DefaultListModel<String>) targetList.getModel();
+            JList<Item> targetList = (JList<Item>) support.getComponent();
+            @SuppressWarnings("unchecked")
+            DefaultListModel<Item> targetModel =
+                    (DefaultListModel<Item>) targetList.getModel();
 
             JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
             int dropIndex = dl.getIndex();
@@ -119,9 +183,9 @@ public class DualListDnD extends JFrame {
         @Override
         protected void exportDone(JComponent source, Transferable data, int action) {
             if (action == TransferHandler.MOVE && sourceList != null && sourceIndex >= 0) {
-                DefaultListModel<String> model =
-                        (DefaultListModel<String>) sourceList.getModel();
-                // On ne retire que si l'élément est toujours à l'index d'origine avec la même valeur
+                @SuppressWarnings("unchecked")
+                DefaultListModel<Item> model =
+                        (DefaultListModel<Item>) sourceList.getModel();
                 if (sourceIndex < model.getSize()) {
                     model.remove(sourceIndex);
                 }
