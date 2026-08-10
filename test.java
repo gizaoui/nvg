@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * Démo : glisser-déposer d'objets métier entre deux JList, avec support
  * de la sélection multiple.
