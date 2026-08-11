@@ -1,59 +1,214 @@
-  import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.event.EventHandler;
+import javafx.application.Application;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TreeCell;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
-public class MainJava8Linux {
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-    // 1. Une classe interne cachée qui sert uniquement à éveiller proprement JavaFX sous Linux
-    public static class LanceurInterne extends Application {
+/**
+ * Démo : TreeView contenant des objets métier, chaque nœud étant associé
+ * à une chaîne (label) utilisée pour l'affichage et le filtrage.
+ */
+public class FilterableTreeViewDemo extends Application {
+
+    // ------------------------------------------------------------------
+    // 1) Le modèle : un objet métier + la chaîne associée
+    // ------------------------------------------------------------------
+
+    /**
+     * Wrapper générique associant un objet métier (data) à une chaîne
+     * (label) servant à l'affichage dans l'arbre et au filtrage.
+     */
+    static class TreeNode<T> {
+        private final T data;
+        private final String label;
+
+        TreeNode(T data, String label) {
+            this.data = data;
+            this.label = label;
+        }
+
+        T getData() {
+            return data;
+        }
+
+        String getLabel() {
+            return label;
+        }
+
         @Override
-        public void start(Stage primaryStage) {
-            // On laisse cette méthode vide, on ne l'utilise pas pour notre logique
+        public String toString() {
+            return label; // utile pour debug / fallback d'affichage
         }
     }
 
-    public static void main(String[] args) {
-        // 2. Débloquer la fermeture de l'application car notre LanceurInterne va se fermer immédiatement
-        Platform.setImplicitExit(false);
+    /** Exemple d'objet métier arbitraire. */
+    static class Produit {
+        private final String nom;
+        private final double prix;
 
-        // 3. Démarrer le moteur JavaFX de manière standard en tâche de fond
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Application.launch(LanceurInterne.class, args);
+        Produit(String nom, double prix) {
+            this.nom = nom;
+            this.prix = prix;
+        }
+
+        String getNom() {
+            return nom;
+        }
+
+        double getPrix() {
+            return prix;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 2) TreeItem filtrable, générique sur TreeNode<T>
+    // ------------------------------------------------------------------
+
+    static class FilterableTreeItem<T> extends TreeItem<TreeNode<T>> {
+
+        private final ObservableList<FilterableTreeItem<T>> sourceChildren = FXCollections.observableArrayList();
+        private final ObjectProperty<Predicate<TreeNode<T>>> predicate = new SimpleObjectProperty<>();
+
+        FilterableTreeItem(TreeNode<T> value) {
+            super(value);
+        }
+
+        Predicate<TreeNode<T>> getPredicate() {
+            return predicate.get();
+        }
+
+        void setPredicate(Predicate<TreeNode<T>> predicate) {
+            this.predicate.set(predicate);
+        }
+
+        ObjectProperty<Predicate<TreeNode<T>>> predicateProperty() {
+            return predicate;
+        }
+
+        void addChild(FilterableTreeItem<T> child) {
+            sourceChildren.add(child);
+            child.predicateProperty().bind(this.predicateProperty());
+            child.predicateProperty().addListener((obs, old, np) -> child.updateFilter());
+            updateFilter();
+        }
+
+        void updateFilter() {
+            Predicate<TreeNode<T>> p = getPredicate();
+
+            if (p == null) {
+                super.getChildren().setAll(sourceChildren);
+            } else {
+                List<FilterableTreeItem<T>> visible = sourceChildren.stream()
+                        .filter(child -> {
+                            child.updateFilter();
+                            boolean selfMatch = p.test(child.getValue());
+                            boolean hasVisibleChildren = !child.getChildren().isEmpty();
+                            return selfMatch || hasVisibleChildren;
+                        })
+                        .collect(Collectors.toList());
+                super.getChildren().setAll(visible);
             }
-        }).start();
 
-        // 4. Exécuter l'instanciation de notre Stage sur le thread JavaFX maintenant qu'il est initialisé
-        Platform.runLater(new Runnable() {
+            if (p != null && !super.getChildren().isEmpty()) {
+                setExpanded(true);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 3) Application
+    // ------------------------------------------------------------------
+
+    @Override
+    public void start(Stage stage) {
+        FilterableTreeItem<Object> root = new FilterableTreeItem<>(new TreeNode<>(null, "Catalogue"));
+        root.setExpanded(true);
+
+        // --- Catégorie "Fruits" : les objets métier sont ici des Produit ---
+        FilterableTreeItem<Object> fruits = new FilterableTreeItem<>(new TreeNode<>(null, "Fruits"));
+        fruits.addChild(itemOf(new Produit("Pomme", 1.20)));
+        fruits.addChild(itemOf(new Produit("Banane", 0.90)));
+        fruits.addChild(itemOf(new Produit("Cerise", 5.50)));
+        fruits.addChild(itemOf(new Produit("Kiwi", 2.10)));
+
+        // --- Catégorie "Légumes" ---
+        FilterableTreeItem<Object> legumes = new FilterableTreeItem<>(new TreeNode<>(null, "Légumes"));
+        legumes.addChild(itemOf(new Produit("Carotte", 0.80)));
+        legumes.addChild(itemOf(new Produit("Poireau", 1.10)));
+        legumes.addChild(itemOf(new Produit("Courgette", 1.40)));
+
+        // --- Catégorie "Viandes" avec sous-catégorie ---
+        FilterableTreeItem<Object> viandes = new FilterableTreeItem<>(new TreeNode<>(null, "Viandes"));
+        FilterableTreeItem<Object> volailles = new FilterableTreeItem<>(new TreeNode<>(null, "Volailles"));
+        volailles.addChild(itemOf(new Produit("Poulet", 6.90)));
+        volailles.addChild(itemOf(new Produit("Dinde", 7.50)));
+        viandes.addChild(volailles);
+        viandes.addChild(itemOf(new Produit("Bœuf", 12.00)));
+
+        root.addChild(fruits);
+        root.addChild(legumes);
+        root.addChild(viandes);
+
+        TreeView<TreeNode<Object>> treeView = new TreeView<>(root);
+        treeView.setShowRoot(true);
+
+        // Cell factory : affiche le label associé, et pourrait afficher
+        // des infos supplémentaires tirées de l'objet métier (ex: prix)
+        treeView.setCellFactory(tv -> new TreeCell<>() {
             @Override
-            public void run() {
-                // 5. Instanciation directe et manuelle du Stage
-                Stage monStage = new Stage();
-                
-                Label message = new Label("JavaFX 8 sous Linux sans extension directe !");
-                StackPane racine = new StackPane(message);
-                Scene scene = new Scene(racine, 400, 200);
-                
-                monStage.setTitle("Solution Java 8 Propre");
-                monStage.setScene(scene);
-                
-                // 6. Forcer l'arrêt total du processus lors de la fermeture
-                monStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-                    @Override
-                    public void handle(WindowEvent event) {
-                        Platform.exit();
-                        System.exit(0);
-                    }
-                });
-                
-                monStage.show();
+            protected void updateItem(TreeNode<Object> node, boolean empty) {
+                super.updateItem(node, empty);
+                if (empty || node == null) {
+                    setText(null);
+                } else if (node.getData() instanceof Produit produit) {
+                    setText(String.format("%s (%.2f €)", produit.getNom(), produit.getPrix()));
+                } else {
+                    setText(node.getLabel()); // catégories : pas d'objet métier
+                }
             }
         });
+
+        // --- Champ de filtre : filtre sur le label associé à chaque nœud ---
+        TextField filterField = new TextField();
+        filterField.setPromptText("Filtrer...");
+        filterField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null || newVal.isBlank()) {
+                root.setPredicate(null);
+            } else {
+                String lower = newVal.toLowerCase();
+                root.setPredicate(node -> node.getLabel().toLowerCase().contains(lower));
+            }
+        });
+
+        BorderPane layout = new BorderPane();
+        layout.setPadding(new Insets(10));
+        layout.setTop(filterField);
+        layout.setCenter(treeView);
+        BorderPane.setMargin(treeView, new Insets(10, 0, 0, 0));
+
+        stage.setScene(new Scene(layout, 420, 520));
+        stage.setTitle("TreeView d'objets filtrable");
+        stage.show();
+    }
+
+    /** Crée un FilterableTreeItem à partir d'un objet métier, avec son label associé. */
+    private static FilterableTreeItem<Object> itemOf(Produit produit) {
+        return new FilterableTreeItem<>(new TreeNode<>(produit, produit.getNom()));
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
