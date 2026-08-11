@@ -1,14 +1,23 @@
 import javafx.application.Application;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
@@ -17,8 +26,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Démo : TreeView contenant des objets métier, chaque nœud étant associé
- * à une chaîne (label) utilisée pour l'affichage et le filtrage.
+ * Démo : TreeView contenant des objets métier, filtrable via un TextField,
+ * avec une TableView à droite recevant des Produit par drag and drop.
+ *
+ * Compatible Java 8.
  */
 public class FilterableTreeViewDemo extends Application {
 
@@ -131,6 +142,9 @@ public class FilterableTreeViewDemo extends Application {
     // 3) Application
     // ------------------------------------------------------------------
 
+    /** Référence à l'objet en cours de drag, car Produit n'est pas Serializable. */
+    private Produit draggedProduit;
+
     @Override
     public void start(Stage stage) {
         FilterableTreeItem<Object> root = new FilterableTreeItem<>(new TreeNode<>(null, "Catalogue"));
@@ -164,21 +178,43 @@ public class FilterableTreeViewDemo extends Application {
         TreeView<TreeNode<Object>> treeView = new TreeView<>(root);
         treeView.setShowRoot(true);
 
-        // Cell factory : affiche le label associé, et pourrait afficher
-        // des infos supplémentaires tirées de l'objet métier (ex: prix)
-        treeView.setCellFactory(tv -> new TreeCell<TreeNode<Object>>() {
-            @Override
-            protected void updateItem(TreeNode<Object> node, boolean empty) {
-                super.updateItem(node, empty);
-                if (empty || node == null) {
-                    setText(null);
-                } else if (node.getData() instanceof Produit) {
-                    Produit produit = (Produit) node.getData();
-                    setText(String.format("%s (%.2f €)", produit.getNom(), produit.getPrix()));
-                } else {
-                    setText(node.getLabel()); // catégories : pas d'objet métier
+        // --- TableView à droite, cible du drop ---
+        TableView<Produit> tableView = createTableView();
+
+        // Cell factory : affichage + source du drag
+        treeView.setCellFactory(tv -> {
+            TreeCell<TreeNode<Object>> cell = new TreeCell<TreeNode<Object>>() {
+                @Override
+                protected void updateItem(TreeNode<Object> node, boolean empty) {
+                    super.updateItem(node, empty);
+                    if (empty || node == null) {
+                        setText(null);
+                    } else if (node.getData() instanceof Produit) {
+                        Produit produit = (Produit) node.getData();
+                        setText(String.format("%s (%.2f €)", produit.getNom(), produit.getPrix()));
+                    } else {
+                        setText(node.getLabel()); // catégories : pas d'objet métier
+                    }
                 }
-            }
+            };
+
+            // --- Démarrage du drag : uniquement pour les feuilles portant un Produit ---
+            cell.setOnDragDetected(event -> {
+                TreeNode<Object> node = cell.getItem();
+                if (node != null && node.getData() instanceof Produit) {
+                    draggedProduit = (Produit) node.getData();
+
+                    Dragboard db = cell.startDragAndDrop(TransferMode.COPY);
+                    ClipboardContent content = new ClipboardContent();
+                    // Le contenu texte est nécessaire pour initier le drag sur toutes plateformes,
+                    // même si on récupère l'objet réel via draggedProduit au moment du drop.
+                    content.putString(node.getLabel());
+                    db.setContent(content);
+                    event.consume();
+                }
+            });
+
+            return cell;
         });
 
         // --- Champ de filtre : filtre sur le label associé à chaque nœud ---
@@ -193,15 +229,59 @@ public class FilterableTreeViewDemo extends Application {
             }
         });
 
+        SplitPane splitPane = new SplitPane(treeView, tableView);
+        splitPane.setDividerPositions(0.45);
+
         BorderPane layout = new BorderPane();
         layout.setPadding(new Insets(10));
         layout.setTop(filterField);
-        layout.setCenter(treeView);
-        BorderPane.setMargin(treeView, new Insets(10, 0, 0, 0));
+        layout.setCenter(splitPane);
+        BorderPane.setMargin(splitPane, new Insets(10, 0, 0, 0));
 
-        stage.setScene(new Scene(layout, 420, 520));
-        stage.setTitle("TreeView d'objets filtrable");
+        stage.setScene(new Scene(layout, 700, 520));
+        stage.setTitle("TreeView filtrable -> TableView (drag and drop)");
         stage.show();
+    }
+
+    /** Construit la TableView cible, avec gestion du drop de Produit. */
+    private TableView<Produit> createTableView() {
+        TableView<Produit> tableView = new TableView<>();
+        tableView.setPlaceholder(new javafx.scene.control.Label("Glissez des produits ici"));
+
+        TableColumn<Produit, String> nomCol = new TableColumn<>("Nom");
+        nomCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getNom()));
+        nomCol.setPrefWidth(150);
+
+        TableColumn<Produit, Number> prixCol = new TableColumn<>("Prix (€)");
+        prixCol.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getPrix()));
+        prixCol.setPrefWidth(100);
+
+        tableView.getColumns().add(nomCol);
+        tableView.getColumns().add(prixCol);
+
+        // --- Acceptation du survol pendant le drag ---
+        tableView.setOnDragOver((DragEvent event) -> {
+            if (event.getGestureSource() != tableView && event.getDragboard().hasString()) {
+                event.acceptTransferModes(TransferMode.COPY);
+            }
+            event.consume();
+        });
+
+        // --- Dépôt effectif : ajout du Produit dans la table ---
+        tableView.setOnDragDropped((DragEvent event) -> {
+            boolean success = false;
+            if (draggedProduit != null) {
+                if (!tableView.getItems().contains(draggedProduit)) {
+                    tableView.getItems().add(draggedProduit);
+                }
+                success = true;
+            }
+            event.setDropCompleted(success);
+            draggedProduit = null;
+            event.consume();
+        });
+
+        return tableView;
     }
 
     /** Crée un FilterableTreeItem à partir d'un objet métier, avec son label associé. */
