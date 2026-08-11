@@ -166,13 +166,14 @@ public class FilterableTreeViewDemo extends Application {
 
         // Cell factory : affiche le label associé, et pourrait afficher
         // des infos supplémentaires tirées de l'objet métier (ex: prix)
-        treeView.setCellFactory(tv -> new TreeCell<>() {
+        treeView.setCellFactory(tv -> new TreeCell<TreeNode<Object>>() {
             @Override
             protected void updateItem(TreeNode<Object> node, boolean empty) {
                 super.updateItem(node, empty);
                 if (empty || node == null) {
                     setText(null);
-                } else if (node.getData() instanceof Produit produit) {
+                } else if (node.getData() instanceof Produit) {
+                    Produit produit = (Produit) node.getData();
                     setText(String.format("%s (%.2f €)", produit.getNom(), produit.getPrix()));
                 } else {
                     setText(node.getLabel()); // catégories : pas d'objet métier
@@ -184,7 +185,7 @@ public class FilterableTreeViewDemo extends Application {
         TextField filterField = new TextField();
         filterField.setPromptText("Filtrer...");
         filterField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal == null || newVal.isBlank()) {
+            if (newVal == null || newVal.trim().isEmpty()) {
                 root.setPredicate(null);
             } else {
                 String lower = newVal.toLowerCase();
