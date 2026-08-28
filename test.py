@@ -4,6 +4,8 @@ A partir d'une liste d'objets Tuple (id, id_parent) représentant des
 dépendances entre fichiers (id_parent = fichier dont dépend id),
 détermine un ordre de chargement valide : chaque fichier est chargé
 après tous ceux dont il dépend.
+5397497226C9EF5EECE203CAAE2AB9DE941C0F610B4CF4E85688F823F2D67F9E
+5397497226C9EF5EECE203CAAE2AB9DEB4571023C483490B940AF6FFF8CEF9D1
 """
 
 from collections import defaultdict
