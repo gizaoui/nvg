@@ -26,8 +26,7 @@ public class MaxSubarrayFixedSize {
         return new int[]{bestStart, bestStart + k - 1};
     }
 
-
-		// Résultat : Indices pour k=2 : [4,5]
+    // Résultat : Indices pour k=2 : [4,5] -> 8+3=11
     public static void main(String[] args) {
         int[] tableau = {1,2,3,4,3,8,3,5,1};
         int k = 2; // Taille de la sous-suite recherchée
