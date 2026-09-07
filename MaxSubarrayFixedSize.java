@@ -1,3 +1,7 @@
+// Soit un tableau d'entiers représentant les bénéfices par mois.
+// On souhaite connaître la plage de mois consécutif enregistrant le plus grand bénéfice.
+
+
 public class MaxSubarrayFixedSize {
 
     public static int[] maxSubarrayIndicesFixedSize(int[] nums, int k) {
@@ -28,7 +32,8 @@ public class MaxSubarrayFixedSize {
 
     // Résultat : Indices pour k=2 : [4,5] -> 8+3=11
     public static void main(String[] args) {
-        int[] tableau = {1,2,3,4,3,8,3,5,1};
+
+        int[] tableau = {1,2,3,4,3,8,3,5,1}; // Liste des bénéfices de janvier à septembre.
         int k = 2; // Taille de la sous-suite recherchée
 
         int[] indices = maxSubarrayIndicesFixedSize(tableau, k);
