@@ -3,7 +3,7 @@
 
         String cleanStr="";
         for(char c : str.toCharArray()) {
-            if(c!=` `) {
+            if(c!=' ') {
                 cleanStr+=c;
             }
         }
@@ -11,7 +11,7 @@
         String result = "";
         for(int i=0; i<cleanStr.length(); ++i) {
             if(i>0 && i%n==0) {
-                result+=`\n`;
+                result+='\n';
             }
             result+=cleanStr.toCharArray()[i];
         }
