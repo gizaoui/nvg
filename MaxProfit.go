@@ -35,6 +35,7 @@ func MaxProfit(nums []int, k int) []int {
 	return []int{bestStart, bestStart + k - 1}
 }
 
+// Résultat : Indices pour k=2 : [4,5] -> 3+8=11
 func main() {
 	tableau := []int{1, 2, 3, 4, 3, 8, 3, 5, 1} // Liste des bénéfices de janvier à septembre.
 	k := 2                                       // Taille de la sous-suite recherchée
