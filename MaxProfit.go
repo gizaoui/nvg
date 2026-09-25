@@ -7,9 +7,9 @@ package main
 
 import "fmt"
 
-type MaximumSubarray struct{}
+type MaxProfit struct{}
 
-func (m MaximumSubarray) MaxSubarrayIndices(nums []int) []int {
+func (m MaxProfit) MaxProfitIndices(nums []int) []int {
 	if len(nums) == 0 {
 		return []int{}
 	}
@@ -43,8 +43,8 @@ func (m MaximumSubarray) MaxSubarrayIndices(nums []int) []int {
 func main() {
 	tableau := []int{1,2,3,4,3,8,3,5,1} // Liste des bénéfices de janvier à septembre.
 	
-	ms := MaximumSubarray{}
-	indices := ms.MaxSubarrayIndices(tableau)
+	ms := MaxProfit{}
+	indices := ms.MaxProfitIndices(tableau)
 
 	if len(indices) == 2 { // 2 : Taille de la sous-suite recherchée
 		fmt.Printf("Indices : [%d, %d]\n", indices[0], indices[1])
