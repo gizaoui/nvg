@@ -1,0 +1,31 @@
+plugins {
+    id 'application'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClass = 'vnc.VncViewer'
+}
+
+// Scénario IHM (sans JUnit) : connexion, clic, journal, enregistrement, rejeu, déconnexion.
+//   gradle clickTest                                   -> faux serveur VNC intégré
+//   gradle clickTest -Dvnc.test.host=localhost -Dvnc.test.port=5900 [-Dvnc.test.password=...] [-Dvnc.test.x=5 -Dvnc.test.y=5]
+//                                                      -> serveur VNC réel (un clic gauche réel en (x, y), touches Maj/Ctrl seulement)
+// Il faut un affichage graphique (DISPLAY) ; avec un serveur réel, utilise un affichage DIFFÉRENT de celui servi
+// par le serveur VNC (sinon les touches envoyées reviennent dans la fenêtre du client et bouclent).
+tasks.register('clickTest', JavaExec) {
+    group = 'verification'
+    description = 'Scénario IHM : connexion, clic, enregistrement, rejeu, déconnexion'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'VncViewerClickTest'
+    systemProperties System.properties.findAll { k, v -> k.toString().startsWith('vnc.test.') }
+}
