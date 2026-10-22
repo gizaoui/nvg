@@ -101,3 +101,49 @@ public class VncViewer extends JPanel {
         });
     }
 }
+
+
+private static int toKeySym(int keyCode) {
+    return switch (keyCode) {
+        case KeyEvent.VK_ENTER      -> 0xFF0D;
+        case KeyEvent.VK_BACK_SPACE -> 0xFF08;
+        case KeyEvent.VK_TAB        -> 0xFF09;
+        case KeyEvent.VK_ESCAPE     -> 0xFF1B;
+        case KeyEvent.VK_DELETE     -> 0xFFFF;
+        case KeyEvent.VK_INSERT     -> 0xFF63;
+        case KeyEvent.VK_HOME       -> 0xFF50;
+        case KeyEvent.VK_LEFT       -> 0xFF51;
+        case KeyEvent.VK_UP         -> 0xFF52;
+        case KeyEvent.VK_RIGHT      -> 0xFF53;
+        case KeyEvent.VK_DOWN       -> 0xFF54;
+        case KeyEvent.VK_PAGE_UP    -> 0xFF55;
+        case KeyEvent.VK_PAGE_DOWN  -> 0xFF56;
+        case KeyEvent.VK_END        -> 0xFF57;
+        default -> (keyCode >= KeyEvent.VK_F1 && keyCode <= KeyEvent.VK_F12)
+                ? 0xFFBE + (keyCode - KeyEvent.VK_F1)
+                : -1;
+    };
+}
+
+addKeyListener(new KeyAdapter() {
+    // Touches non imprimables : flèches, Entrée, F1..F12, etc.
+    @Override public void keyPressed(KeyEvent e) {
+        var c = client;
+        if (c == null) return;
+        int keySym = toKeySym(e.getKeyCode());
+        if (keySym != -1) {
+            c.type(keySym);
+            e.consume();
+        }
+    }
+
+    // Caractères imprimables (gère déjà Maj, AltGr, accents, etc.)
+    @Override public void keyTyped(KeyEvent e) {
+        var c = client;
+        if (c == null) return;
+        char ch = e.getKeyChar();
+        if (ch != KeyEvent.CHAR_UNDEFINED && !Character.isISOControl(ch)) {
+            c.type(String.valueOf(ch));
+        }
+    }
+});
