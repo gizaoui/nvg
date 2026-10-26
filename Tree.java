@@ -1,30 +1,21 @@
 import java.util.*;
-import java.util.stream.Collectors;
 
-class Tuple {
-    String parent;
-    String enfant;
-
-    Tuple(String parent, String enfant) {
-        this.parent = parent;
-        this.enfant = enfant;
-    }
-}
+record Tuple(String parent, String enfant) {}
 
 public class ArbreTableau {
 
     static String[][] construire(List<Tuple> tuples) {
-        // parent -> liste de ses enfants (ordre d'insertion conservé)
-        Map<String, List<String>> index = tuples.stream()
-            .collect(Collectors.groupingBy(
-                t -> t.parent,
-                LinkedHashMap::new,
-                Collectors.mapping(t -> t.enfant, Collectors.toList())));
+        // parent -> liste de ses enfants (vide si le parent n'a pas d'enfant)
+        Map<String, List<String>> index = new LinkedHashMap<>();
+        Set<String> enfants = new HashSet<>();
 
-        // tous les noeuds qui sont enfants de quelqu'un
-        Set<String> enfants = tuples.stream()
-            .map(t -> t.enfant)
-            .collect(Collectors.toSet());
+        for (Tuple t : tuples) {
+            List<String> fils = index.computeIfAbsent(t.parent(), k -> new ArrayList<>());
+            if (t.enfant() != null) {
+                fils.add(t.enfant());
+                enfants.add(t.enfant());
+            }
+        }
 
         List<List<String>> chemins = new ArrayList<>();
         for (String parent : index.keySet()) {
@@ -50,7 +41,7 @@ public class ArbreTableau {
         chemin.add(noeud);
 
         List<String> fils = index.get(noeud);
-        if (fils == null) {                    // feuille : on enregistre le chemin
+        if (fils == null || fils.isEmpty()) {  // feuille : pas d'entrée ou aucun enfant
             resultat.add(new ArrayList<>(chemin));
         } else {
             for (String f : fils) {
@@ -62,14 +53,14 @@ public class ArbreTableau {
     }
 
     public static void main(String[] args) {
-        List<Tuple> tuples = List.of(
-            new Tuple("A", "B"),
-            new Tuple("A", "C"),
-            new Tuple("B", "D"),
-            new Tuple("D", "E"),
-            new Tuple("F", "G"));
+        List<Tuple> tuples = new ArrayList<>();
+        tuples.add(new Tuple("A", "B"));
+        tuples.add(new Tuple("A", "C"));
+        tuples.add(new Tuple("B", "D"));
+        tuples.add(new Tuple("D", "E"));
+        tuples.add(new Tuple("F", "G"));
+        tuples.add(new Tuple("H", null));      // parent sans enfant
 
-        String[][] resultat = construire(tuples);
-        System.out.println(Arrays.deepToString(resultat));
+        System.out.println(Arrays.deepToString(construire(tuples)));
     }
 }
