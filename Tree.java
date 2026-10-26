@@ -1,55 +1,61 @@
 import java.util.*;
 
-record Tuple(String parent, String enfant) {}
+record Tuple(String parent, String child) {
 
-public class ArbreTableau {
+    @Override
+    public String toString() {
+        return parent + " -> " + (child != null ? child : "(none)");
+    }
+}
 
-    static String[][] construire(List<Tuple> tuples) {
-        // parent -> liste de ses enfants (vide si le parent n'a pas d'enfant)
+public class TreeArray {
+
+    static String[][] build(List<Tuple> tuples) {
+        // parent -> list of its children (empty if the parent has no child)
         Map<String, List<String>> index = new LinkedHashMap<>();
-        Set<String> enfants = new HashSet<>();
+        Set<String> allChildren = new HashSet<>();
 
         for (Tuple t : tuples) {
-            List<String> fils = index.computeIfAbsent(t.parent(), k -> new ArrayList<>());
-            if (t.enfant() != null) {
-                fils.add(t.enfant());
-                enfants.add(t.enfant());
+            List<String> children = index.computeIfAbsent(t.parent(), k -> new ArrayList<>());
+            if (t.child() != null) {
+                children.add(t.child());
+                allChildren.add(t.child());
             }
         }
 
-        List<List<String>> chemins = new ArrayList<>();
+        List<List<String>> paths = new ArrayList<>();
         for (String parent : index.keySet()) {
-            if (!enfants.contains(parent)) {   // racine
-                parcourir(parent, index, new ArrayList<>(), chemins);
+            if (!allChildren.contains(parent)) {   // root
+                walk(parent, index, new ArrayList<>(), paths);
             }
         }
 
         // List<List<String>> -> String[][]
-        return chemins.stream()
-            .map(c -> c.toArray(new String[0]))
+        return paths.stream()
+            .map(p -> p.toArray(new String[0]))
             .toArray(String[][]::new);
     }
 
-    // Cœur récursif
-    static void parcourir(String noeud,
-                          Map<String, List<String>> index,
-                          List<String> chemin,
-                          List<List<String>> resultat) {
-        if (chemin.contains(noeud)) {
-            throw new IllegalStateException("Cycle détecté sur : " + noeud);
+    // Recursive core
+    static void walk(String node,
+                     Map<String, List<String>> index,
+                     List<String> path,
+                     List<List<String>> result) {
+        if (path.contains(node)) {
+            throw new IllegalStateException("Cycle detected at: " + node);
         }
-        chemin.add(noeud);
+        path.add(node);
 
-        List<String> fils = index.get(noeud);
-        if (fils == null || fils.isEmpty()) {  // feuille : pas d'entrée ou aucun enfant
-            resultat.add(new ArrayList<>(chemin));
+        List<String> children = index.get(node);
+        if (children == null || children.isEmpty()) {  // leaf: no entry or no children
+            result.add(new ArrayList<>(path));
         } else {
-            for (String f : fils) {
-                parcourir(f, index, chemin, resultat);
+            for (String child : children) {
+                walk(child, index, path, result);
             }
         }
 
-        chemin.remove(chemin.size() - 1);      // backtrack
+        path.remove(path.size() - 1);                  // backtrack
     }
 
     public static void main(String[] args) {
@@ -59,8 +65,9 @@ public class ArbreTableau {
         tuples.add(new Tuple("B", "D"));
         tuples.add(new Tuple("D", "E"));
         tuples.add(new Tuple("F", "G"));
-        tuples.add(new Tuple("H", null));      // parent sans enfant
+        tuples.add(new Tuple("H", null));              // parent without child
 
-        System.out.println(Arrays.deepToString(construire(tuples)));
+        System.out.println(tuples);
+        System.out.println(Arrays.deepToString(build(tuples)));
     }
 }
