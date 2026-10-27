@@ -15,10 +15,12 @@ public class Selection {
 
         Set<String> autorises = new HashSet<>(t2);
 
-        List<List<String>> resultat = t1.stream()
+        List<String> resultat = t1.stream()
             .filter(l -> !l.isEmpty() && autorises.contains(l.get(0)))
+            .flatMap(List::stream)
+            .distinct()
             .collect(Collectors.toList());
 
-        System.out.println(resultat); // [[B, C], [C]]
+        System.out.println(resultat); // [B, C]
     }
 }
