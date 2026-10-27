@@ -1,26 +1,10 @@
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+List<List<String>> listes = List.of(
+        List.of("A", "B", "C"),
+        List.of("D", "B", "C"));
 
-public class Selection {
-
-    public static void main(String[] args) {
-        List<List<String>> t1 = List.of(
-            List.of("A", "B", "C"),
-            List.of("B", "C"),
-            List.of("C"),
-            List.of("D", "B", "C"));
-        List<String> t2 = List.of("B", "C");
-
-        Set<String> autorises = new HashSet<>(t2);
-
-        List<String> resultat = t1.stream()
-            .filter(l -> !l.isEmpty() && autorises.contains(l.get(0)))
-            .flatMap(List::stream)
-            .distinct()
-            .collect(Collectors.toList());
-
-        System.out.println(resultat); // [B, C]
-    }
-}
+List<List<String>> sansDoublons = listes.stream()
+        .flatMap(ligne -> IntStream.range(0, ligne.size())
+                .mapToObj(i -> ligne.subList(i, ligne.size())))
+        .distinct()
+        .toList();
+// [[A, B, C], [B, C], [C], [D, B, C]]
