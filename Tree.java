@@ -1,10 +1,8 @@
-List<List<String>> listes = List.of(
-        List.of("A", "B", "C"),
-        List.of("D", "B", "C"));
+static <T> Stream<TreeItem<T>> flatten(TreeItem<T> item) {
+    return Stream.concat(Stream.of(item),
+        item.getChildren().stream().flatMap(c -> flatten(c)));
+}
 
-List<List<String>> sansDoublons = listes.stream()
-        .flatMap(ligne -> IntStream.range(0, ligne.size())
-                .mapToObj(i -> ligne.subList(i, ligne.size())))
-        .distinct()
-        .toList();
-// [[A, B, C], [B, C], [C], [D, B, C]]
+flatten(treeView.getRoot())
+    .map(TreeItem::getValue)
+    .forEach(System.out::println);
