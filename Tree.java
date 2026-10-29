@@ -24,3 +24,9 @@ String chaine = Arrays.stream(t1)
 
 System.out.println(Arrays.toString(t3));
 System.out.println(chaine);
+
+List<List<String>> t3 = t1.stream()
+        .map(ligne -> ligne.stream()
+                .map(t2::get)
+                .toList())
+        .toList();
