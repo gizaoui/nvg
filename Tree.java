@@ -1,32 +1,26 @@
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+UUID[] t1 = {
+        new UUID(0L, 1L),
+        new UUID(0L, 2L),
+        new UUID(0L, 3L),
+        new UUID(0L, 2L)
+};
 
-public class Selection {
+Map<UUID, String> t2 = Map.of(
+        new UUID(0L, 1L), "A",
+        new UUID(0L, 2L), "B",
+        new UUID(0L, 3L), "C");
 
-    public static void main(String[] args) {
-        UUID a = UUID.randomUUID();
-        UUID b = UUID.randomUUID();
-        UUID c = UUID.randomUUID();
-        UUID d = UUID.randomUUID();
+// Un tableau de chaînes (une par UUID)
+String[] t3 = Arrays.stream(t1)
+        .map(t2::get)
+        .toArray(String[]::new);
+// [A, B, C, B]
 
-        List<List<UUID>> t1 = List.of(
-            List.of(a, b, c),
-            List.of(b, c),
-            List.of(c),
-            List.of(d, b, c));
-        List<UUID> t2 = List.of(b, c);
+// Une seule chaîne
+String chaine = Arrays.stream(t1)
+        .map(t2::get)
+        .collect(Collectors.joining());
+// "ABCB"
 
-        Set<UUID> autorises = new HashSet<>(t2);
-
-        List<UUID> resultat = t1.stream()
-            .filter(l -> !l.isEmpty() && autorises.contains(l.get(0)))
-            .flatMap(List::stream)
-            .distinct()
-            .collect(Collectors.toList());
-
-        System.out.println(resultat); // [UUID de b, UUID de c]
-    }
-}
+System.out.println(Arrays.toString(t3));
+System.out.println(chaine);
