@@ -1,41 +1,51 @@
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class TaskPaths {
 
-    private static final List<Map<String, List<String>>> allTasks = List.of(
-            Map.of("T01", List.of("T02", "T04")),
-            Map.of("T02", List.of("T03")),
-            Map.of("T04", List.of())
+    private static UUID id(String name) {
+        return UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static final UUID T01 = id("T01");
+    private static final UUID T02 = id("T02");
+    private static final UUID T03 = id("T03");
+    private static final UUID T04 = id("T04");
+
+    private static final List<Map<UUID, List<UUID>>> allTasks = List.of(
+            Map.of(T01, List.of(T02, T04)),
+            Map.of(T02, List.of(T03)),
+            Map.of(T04, List.of())
     );
 
-    public static String[][] findPaths(List<Map<String, List<String>>> allTasks) {
-        Map<String, List<String>> graph = new LinkedHashMap<>();
-        for (Map<String, List<String>> m : allTasks) {
+    public static UUID[][] findPaths(List<Map<UUID, List<UUID>>> allTasks) {
+        Map<UUID, List<UUID>> graph = new LinkedHashMap<>();
+        for (Map<UUID, List<UUID>> m : allTasks) {
             graph.putAll(m);
         }
 
         // racines = nœuds qui ne sont l'enfant de personne
-        Set<String> allChildren = new HashSet<>();
+        Set<UUID> allChildren = new HashSet<>();
         graph.values().forEach(allChildren::addAll);
 
-        List<List<String>> result = new ArrayList<>();
-        for (String root : graph.keySet()) {
+        List<List<UUID>> result = new ArrayList<>();
+        for (UUID root : graph.keySet()) {
             if (!allChildren.contains(root)) {
                 walk(root, graph, new ArrayList<>(), result);
             }
         }
 
         return result.stream()
-                .map(p -> p.toArray(new String[0]))
-                .toArray(String[][]::new);
+                .map(p -> p.toArray(new UUID[0]))
+                .toArray(UUID[][]::new);
     }
 
-    private static void walk(String node, Map<String, List<String>> graph,
-                             List<String> path, List<List<String>> result) {
+    private static void walk(UUID node, Map<UUID, List<UUID>> graph,
+                             List<UUID> path, List<List<UUID>> result) {
         path.add(node);
 
         boolean extended = false;
-        for (String child : graph.getOrDefault(node, List.of())) {
+        for (UUID child : graph.getOrDefault(node, List.of())) {
             if (path.contains(child)) {
                 continue;                   // cycle : on ne suit pas cette branche
             }
@@ -50,8 +60,7 @@ public class TaskPaths {
     }
 
     public static void main(String[] args) {
-        String[][] paths = findPaths(allTasks);
+        UUID[][] paths = findPaths(allTasks);
         System.out.println(Arrays.deepToString(paths));
-        // [[T01, T02, T03], [T01, T04]]
     }
 }
