@@ -1,5 +1,5 @@
-List<Map<UUID, List<UUID>>> allTasks = new ArrayList<>();
-
-allTasks.add(Map.of(t01, List.of(t02, t04)));
-allTasks.add(Map.of(t02, List.of(t03)));
-allTasks.add(Map.of(t04, List.of()));
+List<List<UUID>> listResultUUID = data.stream()
+        .flatMap(e -> IntStream.range(0, e.size())
+                .mapToObj(i -> e.subList(i, e.size())))
+        .distinct()
+        .toList();
