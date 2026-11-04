@@ -1,19 +1,5 @@
-<build>
-  <plugins>
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-dependency-plugin</artifactId>
-      <executions>
-        <execution>
-          <id>copy-deps</id>
-          <phase>package</phase>
-          <goals><goal>copy-dependencies</goal></goals>
-          <configuration>
-            <outputDirectory>${maven.multiModuleProjectDirectory}/libs</outputDirectory>
-            <includeScope>runtime</includeScope>
-          </configuration>
-        </execution>
-      </executions>
-    </plugin>
-  </plugins>
-</build>
+-Dmaven.wagon.http.ssl.insecure=true
+-Dmaven.wagon.http.ssl.allowall=true
+-Dmaven.resolver.transport=wagon
+
+-Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.resolver.transport=wagon
