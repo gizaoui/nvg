@@ -1,0 +1,20 @@
+plugins {
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+application {
+    mainClass = 'main.Main'
+    // mainModule = 'main'
+    applicationDefaultJvmArgs = ['--enable-native-access=javafx.graphics',
+                                 '--sun-misc-unsafe-memory-access=allow']
+}
+
+javafx {
+    version = '21.0.5'
+    modules = ['javafx.controls', 'javafx.fxml']
+}
+
+dependencies {
+    // rien de particulier pour l'instant
+}

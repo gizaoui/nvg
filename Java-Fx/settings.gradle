@@ -1,0 +1,5 @@
+rootProject.name = 'javafx'
+
+include '01'
+include '02'
+include 'main'

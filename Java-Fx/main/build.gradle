@@ -1,0 +1,46 @@
+
+plugins {
+    id 'application'
+}
+
+application {
+    // applicationDefaultJvmArgs=['-Djdk.gtk.version=2']
+    // applicationDefaultJvmArgs=['--warning-mode all']
+    mainClass = 'main.Main'
+}
+
+// cf. MAJ spring-context/Test/settings.gradle
+dependencies {
+    // implementation project(':core')
+}
+
+
+distributions {
+    main {
+        contents {
+            from('.') { include 'src/main/resources/**' }
+        }
+    }
+}
+
+task run(type: JavaExec, overwrite: true) {
+
+    args = ["GZI"]
+
+    // args = ["-fx"]
+    // environment 'LD_LIBRARY_PATH', "${environment.PATH}:${System.getenv('HOME')}/jdk/lib"
+    // println "\n${YELLOW}LD_LIBRARY_PATH :${RESET} ${environment.PATH}:${System.getenv('HOME')}/jdk/lib"
+
+//    classpath = sourceSets.main.runtimeClasspath + files('resources')
+//    workingDir = "${System.getenv('HOME')}${DEPLOY}/current-integration/cms/soft"
+//    jvmArgs = ['-Djdk.gtk.version=2']
+}
+
+
+startScripts {
+    doLast {
+        //unixScript.text = unixScript.text.replace('CLASSPATH=', 'CLASSPATH=$APP_HOME/src/main/resources:')
+    }
+}
+
+
