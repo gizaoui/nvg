@@ -43,7 +43,9 @@ def main() -> int:
 
     total = 0
     for id_src, path in enumerate(iter_sources(BASE_DIR), start=1):
-        data = path.read_text(encoding="utf-8")
+        # newline="" : conserve les retours à la ligne tels quels (\r\n inclus)
+        with path.open(encoding="utf-8", newline="") as f:
+            data = f.read()
         chunks = [data[i:i + MAXSTR] for i in range(0, len(data), MAXSTR)]
         print(f"{id_src} - {path} ({len(data)} char(s) => {len(chunks)} file(s))")
 
