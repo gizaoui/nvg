@@ -1,10 +1,8 @@
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
-
-import qrcode
-import qrcode.constants
-import qrcode.image.svg
 
 MAXSTR = 1700
 BASE_DIR = Path("/home/gizaoui/QRCode/in/test")
@@ -22,17 +20,24 @@ def iter_sources(base: Path):
 
 
 def make_qr(text: str, target: Path) -> None:
-    qr = qrcode.QRCode(
-        version=None,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        image_factory=qrcode.image.svg.SvgPathImage,
+    """Génère un QR code SVG avec la commande système qrencode.
+
+    Le texte est transmis par l'entrée standard (pas d'argument de ligne de
+    commande : pas de limite de taille ni de problème d'échappement).
+    """
+    subprocess.run(
+        ["qrencode", "-t", "SVG", "-l", "L", "-o", str(target)],
+        input=text.encode("utf-8"),
+        check=True,
+        capture_output=True,
     )
-    qr.add_data(text)
-    qr.make(fit=True)
-    qr.make_image(fill_color="black", back_color="white").save(str(target))
 
 
 def main() -> int:
+    if shutil.which("qrencode") is None:
+        print("ERR : la commande 'qrencode' est introuvable (apt install qrencode)", file=sys.stderr)
+        return 1
+
     for svg in BASE_DIR.glob("*.svg"):
         svg.unlink()
 
@@ -46,8 +51,8 @@ def main() -> int:
             target = BASE_DIR / f"{id_src:02d}_{path.name}_{id_chunk:02d}.svg"
             try:
                 make_qr(chunk + END_MARKER, target)
-            except Exception as err:
-                print(f"ERR : {target} : {err!r}", file=sys.stderr)
+            except subprocess.CalledProcessError as err:
+                print(f"ERR : {target} : {err.stderr.decode(errors='replace').strip()}", file=sys.stderr)
                 return 1
             total += 1
 
