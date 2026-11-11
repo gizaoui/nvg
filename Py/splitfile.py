@@ -1,61 +1,59 @@
-import glob
 import os
+import sys
+from pathlib import Path
+
 import qrcode
+import qrcode.constants
 import qrcode.image.svg
 
-
 MAXSTR = 1700
-ID_SPLIT_FILE = 1
-ID_SRC_FILE = 0
+BASE_DIR = Path("/home/gizaoui/QRCode/in/test")
+EXTENSIONS = {".py", ".txt", ".xml", ".md"}
+EXCLUDED_DIRS = {"target", ".settings", "logs", "output"}
+END_MARKER = "\n@@EBLK@@"
 
 
-
-for outFile in sorted(glob.glob("/home/gizaoui/QRCode/in/test/*.svg")):
-    if os.path.isfile(outFile):
-        os.remove(outFile)
-
-
-for (dir_path, dir_names, file_names) in os.walk(r"/home/gizaoui/QRCode/in/test"):
-    if not any(xs in dir_path for xs in ["target", ".settings", "logs", "output"]) :
-        for javaFile in file_names:
-            if javaFile.endswith(('.py','.txt','.xml','.md')) :
-                FILE_PATH = f"{dir_path}/{javaFile}"
-                ID_SRC_FILE += 1
-
-                if os.path.isfile(FILE_PATH):
-                    fOutput = open(FILE_PATH, "r", encoding="utf-8")
-                    data = fOutput.read()
-                    fOutput.close()
-                    print(f"{ID_SRC_FILE} - {FILE_PATH} ({len(data)} char(s) => {int(len(data)/MAXSTR)+1} file(s))")
-
-                    ID_FILE = 0
-                    for splitStr in [data[offset - MAXSTR:offset] for offset in range(MAXSTR, len(data) + MAXSTR, MAXSTR)]:
-                        qr = qrcode.QRCode(
-                            version=None,
-                            error_correction=qrcode.constants.ERROR_CORRECT_L,
-                            image_factory=qrcode.image.svg.SvgPathImage
-                        )
-                        qr.clear()
-                        qr.make(fit=True)
-                        qr.add_data(f"{splitStr}\n@@EBLK@@")
-
-                        ID_SPLIT_FILE += 1
-                        ID_FILE += 1
-                        splitSVG = f"/home/gizaoui/QRCode/in/test/{format(ID_SRC_FILE, '02d')}_{javaFile}_{format(ID_FILE, '02d')}.svg"
-
-                        try:
-                            # qrencode -o picture.png "MY TEST STRING"
-                            img = qr.make_image(fill_color="black", back_color="white")
-                            img.save(splitSVG)
-                            print(f"\nSAVE QRcode(s) generated !!!\n")
-                        except Exception as err:
-                            print(f"SVG FILE {splitSVG}")
-                            print(f"ERR : Unexpected {err=}, {type(err)=}")
-                            exit(1)
+def iter_sources(base: Path):
+    for root, dirs, files in os.walk(base):
+        dirs[:] = sorted(d for d in dirs if d not in EXCLUDED_DIRS)  # élagage en place
+        for name in sorted(files):
+            if Path(name).suffix in EXTENSIONS:
+                yield Path(root) / name
 
 
-                else:
-                    print(f"ERR : File {FILE_PATH} not found")
-                    exit(1)
+def make_qr(text: str, target: Path) -> None:
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        image_factory=qrcode.image.svg.SvgPathImage,
+    )
+    qr.add_data(text)
+    qr.make(fit=True)
+    qr.make_image(fill_color="black", back_color="white").save(str(target))
 
-print(f"\n{ID_SPLIT_FILE} QRcode(s) generated !!!\n")
+
+def main() -> int:
+    for svg in BASE_DIR.glob("*.svg"):
+        svg.unlink()
+
+    total = 0
+    for id_src, path in enumerate(iter_sources(BASE_DIR), start=1):
+        data = path.read_text(encoding="utf-8")
+        chunks = [data[i:i + MAXSTR] for i in range(0, len(data), MAXSTR)]
+        print(f"{id_src} - {path} ({len(data)} char(s) => {len(chunks)} file(s))")
+
+        for id_chunk, chunk in enumerate(chunks, start=1):
+            target = BASE_DIR / f"{id_src:02d}_{path.name}_{id_chunk:02d}.svg"
+            try:
+                make_qr(chunk + END_MARKER, target)
+            except Exception as err:
+                print(f"ERR : {target} : {err!r}", file=sys.stderr)
+                return 1
+            total += 1
+
+    print(f"\n{total} QRcode(s) generated !!!")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
