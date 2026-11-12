@@ -31,7 +31,7 @@ public class ImportZipController {
     @FXML private Button renameButton;
     @FXML private Button replaceAllImagesButton;
     @FXML private TreeView<ZipItem> artifactsTree;
-    @FXML private TreeView<String> existingImagesTree;
+    @FXML private ListView<String> existingImagesList;
     @FXML private Label noDuplicateLabel;
     @FXML private ProgressBar progressBar;
     @FXML private Button importButton;
@@ -69,7 +69,6 @@ public class ImportZipController {
     @FXML
     private void initialize() {
         artifactsTree.setRoot(new TreeItem<>());
-        existingImagesTree.setRoot(new TreeItem<>());
 
         // Affiche en rouge les noms déjà utilisés et non résolus
         artifactsTree.setCellFactory(tv -> new TreeCell<>() {
@@ -88,20 +87,18 @@ public class ImportZipController {
 
         // Sélection à gauche -> sélection de l'image existante correspondante à droite
         artifactsTree.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
-            existingImagesTree.getSelectionModel().clearSelection();
+            existingImagesList.getSelectionModel().clearSelection();
             if (sel == null || sel.getValue() == null) return;
-            for (TreeItem<String> ti : existingImagesTree.getRoot().getChildren()) {
-                if (ti.getValue().equals(sel.getValue().targetName)) {
-                    existingImagesTree.getSelectionModel().select(ti);
-                    break;
-                }
+            String target = sel.getValue().targetName;
+            if (existingImagesList.getItems().contains(target)) {
+                existingImagesList.getSelectionModel().select(target);
             }
         });
 
         // Clic sur une image existante : à brancher sur votre fenêtre de comparaison
-        existingImagesTree.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
-            if (sel != null && sel.getValue() != null) {
-                compare(sel.getValue());
+        existingImagesList.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
+            if (sel != null) {
+                compare(sel);
             }
         });
 
@@ -254,13 +251,13 @@ public class ImportZipController {
         left.getChildren().clear();
         items.forEach(i -> left.getChildren().add(new TreeItem<>(i)));
 
-        TreeItem<String> right = existingImagesTree.getRoot();
-        right.getChildren().clear();
-        items.stream()
-                .filter(ZipItem::isDuplicate)
-                .forEach(i -> right.getChildren().add(new TreeItem<>(i.targetName)));
+        existingImagesList.getItems().setAll(
+                items.stream()
+                        .filter(ZipItem::isDuplicate)
+                        .map(i -> i.targetName)
+                        .toList());
 
-        noDuplicateLabel.setVisible(right.getChildren().isEmpty());
+        noDuplicateLabel.setVisible(existingImagesList.getItems().isEmpty());
         artifactsTree.refresh();   // recalcule la couleur des cellules
     }
 
