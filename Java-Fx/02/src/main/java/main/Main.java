@@ -3,7 +3,6 @@ package main;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import org.apache.logging.log4j.LogManager;
@@ -16,11 +15,8 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("import-zip.fxml"));
-        Scene scene = new Scene(loader.load());
-        stage.setTitle("Hello FXML");
-        stage.setMinWidth(1100);
-        stage.setMinHeight(500);
-        stage.setScene(scene);
+        loader.setRoot(stage);   // le Stage est la racine du FXML (fx:root)
+        loader.load();
         stage.show();
     }
 
