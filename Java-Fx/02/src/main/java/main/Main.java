@@ -14,7 +14,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("import-zip.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("launcher.fxml"));
         loader.setRoot(stage);   // le Stage est la racine du FXML (fx:root)
         loader.load();
         stage.show();

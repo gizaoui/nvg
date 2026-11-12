@@ -17,7 +17,7 @@
 <fx:root type="javafx.stage.Stage" xmlns="http://javafx.com/javafx"
          xmlns:fx="http://javafx.com/fxml"
          fx:controller="main.ImportZipController"
-         title="Hello FXML" minWidth="1100" minHeight="500">
+         title="Import zip" minWidth="1100" minHeight="500">
   <scene>
     <Scene>
       <BorderPane prefWidth="1000" prefHeight="700">

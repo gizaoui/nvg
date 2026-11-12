@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Scene?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.StackPane?>
+
+<fx:root type="javafx.stage.Stage" xmlns="http://javafx.com/javafx"
+         xmlns:fx="http://javafx.com/fxml"
+         fx:controller="main.LauncherController"
+         title="Launcher">
+  <scene>
+    <Scene>
+      <StackPane prefWidth="300" prefHeight="150">
+        <padding>
+            <Insets topRightBottomLeft="20"/>
+        </padding>
+        <Button fx:id="openImportButton" text="Import zip..." onAction="#onOpenImport"/>
+      </StackPane>
+    </Scene>
+  </scene>
+</fx:root>
