@@ -25,20 +25,20 @@ public class ImportZipController {
     private static final Path IMAGES_DIR = Path.of("images");
 
     // --- Éléments FXML ---
-    @FXML private TextField zipPathField;
+    @FXML private TextField zipDirectory;
     @FXML private Button browseButton;
-    @FXML private Button replaceAllArtifactsButton;
+    @FXML private Button replaceAllArtifacts;
     @FXML private Button renameButton;
-    @FXML private Button replaceAllImagesButton;
-    @FXML private TreeView<ZipItem> artifactsTree;
-    @FXML private ListView<String> existingImagesList;
+    @FXML private Button replaceAllImages;
+    @FXML private TreeView<ZipItem> items;
+    @FXML private ListView<String> imagesList;
     @FXML private Label noDuplicateLabel;
     @FXML private ProgressBar progressBar;
     @FXML private Button importButton;
     @FXML private Button closeButton;
 
     private File zipFile;
-    private final List<ZipItem> items = new ArrayList<>();
+    private final List<ZipItem> artifactItems = new ArrayList<>();
 
     /** Élément du zip à importer. */
     public static class ZipItem {
@@ -68,10 +68,10 @@ public class ImportZipController {
 
     @FXML
     private void initialize() {
-        artifactsTree.setRoot(new TreeItem<>());
+        items.setRoot(new TreeItem<>());
 
         // Affiche en rouge les noms déjà utilisés et non résolus
-        artifactsTree.setCellFactory(tv -> new TreeCell<>() {
+        items.setCellFactory(tv -> new TreeCell<>() {
             @Override
             protected void updateItem(ZipItem item, boolean empty) {
                 super.updateItem(item, empty);
@@ -86,24 +86,24 @@ public class ImportZipController {
         });
 
         // Sélection à gauche -> sélection de l'image existante correspondante à droite
-        artifactsTree.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
-            existingImagesList.getSelectionModel().clearSelection();
+        items.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
+            imagesList.getSelectionModel().clearSelection();
             if (sel == null || sel.getValue() == null) return;
             String target = sel.getValue().targetName;
-            if (existingImagesList.getItems().contains(target)) {
-                existingImagesList.getSelectionModel().select(target);
+            if (imagesList.getItems().contains(target)) {
+                imagesList.getSelectionModel().select(target);
             }
         });
 
         // Clic sur une image existante : à brancher sur votre fenêtre de comparaison
-        existingImagesList.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
+        imagesList.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
             if (sel != null) {
                 compare(sel);
             }
         });
 
         renameButton.disableProperty().bind(
-                artifactsTree.getSelectionModel().selectedItemProperty().isNull());
+                items.getSelectionModel().selectedItemProperty().isNull());
 
         refresh();
     }
@@ -133,7 +133,7 @@ public class ImportZipController {
 
     @FXML
     private void onRename() {
-        TreeItem<ZipItem> selected = artifactsTree.getSelectionModel().getSelectedItem();
+        TreeItem<ZipItem> selected = items.getSelectionModel().getSelectedItem();
         if (selected == null || selected.getValue() == null) return;
 
         ZipItem item = selected.getValue();
@@ -152,14 +152,14 @@ public class ImportZipController {
 
     @FXML
     private void onImport() {
-        if (zipFile == null || items.isEmpty()) {
+        if (zipFile == null || artifactItems.isEmpty()) {
             alert(Alert.AlertType.WARNING, "Aucune archive chargée.");
             return;
         }
 
         // Liste figée sur le thread JavaFX : les doublons non résolus sont ignorés
-        List<ZipItem> toImport = items.stream().filter(i -> !i.isUnresolved()).toList();
-        int skipped = items.size() - toImport.size();
+        List<ZipItem> toImport = artifactItems.stream().filter(i -> !i.isUnresolved()).toList();
+        int skipped = artifactItems.size() - toImport.size();
         if (toImport.isEmpty()) {
             alert(Alert.AlertType.WARNING, "Tous les éléments sont en conflit : remplacez ou renommez-les.");
             return;
@@ -233,32 +233,32 @@ public class ImportZipController {
             return;
         }
         zipFile = file;
-        zipPathField.setText(file.getAbsolutePath());
-        items.clear();
-        items.addAll(loaded);
+        zipDirectory.setText(file.getAbsolutePath());
+        artifactItems.clear();
+        artifactItems.addAll(loaded);
         progressBar.setProgress(0);
         refresh();
     }
 
     private void replaceAllDuplicates() {
-        items.stream().filter(ZipItem::isDuplicate).forEach(i -> i.replace = true);
+        artifactItems.stream().filter(ZipItem::isDuplicate).forEach(i -> i.replace = true);
         refresh();
     }
 
     /** Reconstruit les deux arbres à partir de la liste des éléments. */
     private void refresh() {
-        TreeItem<ZipItem> left = artifactsTree.getRoot();
+        TreeItem<ZipItem> left = items.getRoot();
         left.getChildren().clear();
-        items.forEach(i -> left.getChildren().add(new TreeItem<>(i)));
+        artifactItems.forEach(i -> left.getChildren().add(new TreeItem<>(i)));
 
-        existingImagesList.getItems().setAll(
-                items.stream()
+        imagesList.getItems().setAll(
+                artifactItems.stream()
                         .filter(ZipItem::isDuplicate)
                         .map(i -> i.targetName)
                         .toList());
 
-        noDuplicateLabel.setVisible(existingImagesList.getItems().isEmpty());
-        artifactsTree.refresh();   // recalcule la couleur des cellules
+        noDuplicateLabel.setVisible(imagesList.getItems().isEmpty());
+        items.refresh();   // recalcule la couleur des cellules
     }
 
     private void compare(String imageName) {
@@ -269,8 +269,8 @@ public class ImportZipController {
     private void setBusy(boolean busy) {
         importButton.setDisable(busy);
         browseButton.setDisable(busy);
-        replaceAllArtifactsButton.setDisable(busy);
-        replaceAllImagesButton.setDisable(busy);
+        replaceAllArtifacts.setDisable(busy);
+        replaceAllImages.setDisable(busy);
     }
 
     private void alert(Alert.AlertType type, String message) {

@@ -30,7 +30,7 @@
 
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <Label text="Zip File to import :"/>
-                <TextField fx:id="zipPathField" HBox.hgrow="ALWAYS"/>
+                <TextField fx:id="zipDirectory" HBox.hgrow="ALWAYS"/>
                 <Button fx:id="browseButton" text="X" onAction="#onBrowse"/>
             </HBox>
 
@@ -57,11 +57,11 @@
                     </padding>
                     <Label text="Artifacts to import (in red if name is already in use)"
                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <Button fx:id="replaceAllArtifactsButton" text="Replace all"
+                    <Button fx:id="replaceAllArtifacts" text="Replace all"
                             onAction="#onReplaceAllArtifacts"/>
                     <Button fx:id="renameButton" text="Rename" onAction="#onRename"/>
                 </HBox>
-                <TreeView fx:id="artifactsTree" showRoot="false" VBox.vgrow="ALWAYS"/>
+                <TreeView fx:id="items" showRoot="false" VBox.vgrow="ALWAYS"/>
             </VBox>
 
             <!-- Panneau droit -->
@@ -72,11 +72,11 @@
                     </padding>
                     <Label text="Existing images (click to compare):"
                            HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <Button fx:id="replaceAllImagesButton" text="Replace all"
+                    <Button fx:id="replaceAllImages" text="Replace all"
                             onAction="#onReplaceAllImages"/>
                 </HBox>
                 <StackPane VBox.vgrow="ALWAYS">
-                    <ListView fx:id="existingImagesList"/>
+                    <ListView fx:id="imagesList"/>
                     <Label fx:id="noDuplicateLabel" text="No duplicate images"
                            mouseTransparent="true"/>
                 </StackPane>
