@@ -1,91 +1,63 @@
 #!/usr/bin/env python3
+"""Usage: python remove_comments.py Fichier.java
+
+Supprime tous les commentaires (javadoc inclus) et toutes les lignes vides.
+Une sauvegarde Fichier.java.bak est créée avant modification.
 """
-A partir d'une liste d'objets Tuple (id, id_parent) représentant des
-dépendances entre fichiers (id_parent = fichier dont dépend id),
-détermine un ordre de chargement valide : chaque fichier est chargé
-après tous ceux dont il dépend.
+import shutil
+import sys
+from pathlib import Path
 
-641D3E0C8E2FBCCEFBE672352D2C3DDE5F4C471256785EF37D3161E89CB2A5BE
-
-Pour le poste ayant la MAC address (Gilles) :
-        82:92:3C:CC:39:10
-"""
-
-from collections import defaultdict
+NL = "\x01"  # retour à la ligne protégé (à l'intérieur d'un text block)
 
 
-class Tuple:
-    def __init__(self, id, id_parent=None):
-        self.id = id
-        self.id_parent = id_parent
+def strip_comments(src: str) -> str:
+    out = []
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        nxt = src[i + 1] if i + 1 < n else ""
 
-    def __repr__(self):
-        return f"Tuple(id={self.id!r}, id_parent={self.id_parent!r})"
+        if src.startswith('"""', i):  # text block
+            j = i + 3
+            while j < n and not (src.startswith('"""', j) and src[j - 1] != "\\"):
+                j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 3].replace("\n", NL))
+            i = j + 3
 
+        elif c in ('"', "'"):  # chaîne / caractère
+            j = i + 1
+            while j < n and src[j] != c:
+                j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 1])
+            i = j + 1
 
-class DependanceCycliqueError(Exception):
-    """Levée quand des objets ne peuvent être atteints depuis les racines (cycle)."""
-    pass
+        elif c == "/" and nxt == "/":  # commentaire de ligne
+            j = src.find("\n", i)
+            i = n if j == -1 else j
 
+        elif c == "/" and nxt == "*":  # commentaire de bloc / javadoc
+            j = src.find("*/", i + 2)
+            i = n if j == -1 else j + 2
 
-def _construire_index(objets):
-    """Regroupe les objets par id_parent et identifie les racines (sans dépendance)."""
-    ids_connus = {obj.id for obj in objets}
-    enfants_par_parent = defaultdict(list)
-    racines = []
-
-    for obj in objets:
-        if obj.id_parent is None or obj.id_parent not in ids_connus:
-            racines.append(obj)
         else:
-            enfants_par_parent[obj.id_parent].append(obj)
+            out.append(c)
+            i += 1
 
-    return enfants_par_parent, racines
+    lines = [line.rstrip() for line in "".join(out).split("\n") if line.strip()]
+    return "\n".join(lines).replace(NL, "\n") + "\n"
 
 
-def ordre_chargement(objets):
-    """
-    Retourne la liste des objets Tuple dans un ordre de chargement valide :
-    un objet n'apparaît qu'après l'objet dont il dépend (son id_parent).
-
-    Lève DependanceCycliqueError si certains objets ne sont atteignables
-    depuis aucune racine (cycle de dépendances).
-    """
-    enfants_par_parent, racines = _construire_index(objets)
-
-    ordre = []
-    visites = set()
-
-    def _parcourir(objet):
-        if objet.id in visites:
-            return
-        visites.add(objet.id)
-        ordre.append(objet)
-        for enfant in enfants_par_parent.get(objet.id, []):
-            _parcourir(enfant)
-
-    for racine in racines:
-        _parcourir(racine)
-
-    if len(visites) != len(objets):
-        manquants = [obj.id for obj in objets if obj.id not in visites]
-        raise DependanceCycliqueError(
-            f"Dépendance cyclique détectée, objets non atteints : {manquants}"
-        )
-
-    return ordre
+def main():
+    if len(sys.argv) != 2:
+        sys.exit("Usage: python remove_comments.py Fichier.java")
+    f = Path(sys.argv[1])
+    if not f.is_file():
+        sys.exit(f"Fichier introuvable : {f}")
+    shutil.copy2(f, f.with_name(f.name + ".bak"))
+    f.write_text(strip_comments(f.read_text(encoding="utf-8")), encoding="utf-8")
+    print(f"Commentaires et lignes vides supprimés : {f}")
 
 
 if __name__ == "__main__":
-    objets = [
-        Tuple(1),
-        Tuple(2, 1),
-        Tuple(3, 1),
-        Tuple(4, 2),
-        Tuple(5, 2),
-        Tuple(6),
-        Tuple(7, 6),
-    ]
-
-    for obj in ordre_chargement(objets):
-        print(f"Chargement de {obj.id} (dépend de {obj.id_parent})")
+    main()
