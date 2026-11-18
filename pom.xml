@@ -1,28 +1,14 @@
 <plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-jar-plugin</artifactId>
-  <version>3.4.2</version>
+  <groupId>org.codehaus.mojo</groupId>
+  <artifactId>exec-maven-plugin</artifactId>
   <configuration>
-    <archive>
-      <manifest>
-        <mainClass>com.exemple.Main</mainClass>
-        <addClasspath>true</addClasspath>
-        <classpathPrefix>lib/</classpathPrefix>
-      </manifest>
-    </archive>
+    <executable>java</executable>
+    <arguments>
+      <argument>--add-opens</argument>
+      <argument>java.desktop/java.awt=ALL-UNNAMED</argument>
+      <argument>-classpath</argument>
+      <classpath/>
+      <argument>com.ex.Main</argument>
+    </arguments>
   </configuration>
-</plugin>
-<plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-dependency-plugin</artifactId>
-  <version>3.8.1</version>
-  <executions>
-    <execution>
-      <phase>package</phase>
-      <goals><goal>copy-dependencies</goal></goals>
-      <configuration>
-        <outputDirectory>${project.build.directory}/lib</outputDirectory>
-      </configuration>
-    </execution>
-  </executions>
 </plugin>
